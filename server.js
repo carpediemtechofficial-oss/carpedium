@@ -2,6 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const path = require("path");
+require("dotenv").config({ path: ".env.local" });
 require("dotenv").config();
 
 const Enquiry = require("./enquiry.model");
@@ -83,12 +84,110 @@ app.post("/api/enquiry", async (req, res) => {
   }
 });
 
+// Attendance API Endpoints
+const { createClient } = require("@supabase/supabase-js");
+
+const getSupabaseClient = () => {
+  const supabaseUrl = process.env.VITE_SUPABASE_URL || "https://cnorljcgkpqfovcmdzmj.supabase.co";
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  return createClient(supabaseUrl, supabaseServiceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+};
+
+app.get("/api/attendance", async (req, res) => {
+  try {
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase.from("student_attendance").select("*").order("date", { ascending: false });
+    if (error) throw error;
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get("/api/attendance/today", async (req, res) => {
+  try {
+    const supabase = getSupabaseClient();
+    const today = new Date().toISOString().split("T")[0];
+    const { data, error } = await supabase.from("student_attendance").select("*").eq("date", today);
+    if (error) throw error;
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get("/api/attendance/student/:id", async (req, res) => {
+  try {
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase.from("student_attendance").select("*").eq("student_id", req.params.id).order("date", { ascending: false });
+    if (error) throw error;
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get("/api/attendance/stats", async (req, res) => {
+  try {
+    const supabase = getSupabaseClient();
+    
+    // Fetch all logs
+    const { data: logs, error: logsError } = await supabase.from("student_attendance").select("*");
+    if (logsError) throw logsError;
+
+    // Course-wise rates
+    const courseStats = {};
+    logs.forEach(l => {
+      const course = l.course || "General";
+      if (!courseStats[course]) {
+        courseStats[course] = { total: 0, attended: 0 };
+      }
+      courseStats[course].total++;
+      if (l.status === "Present" || l.status === "Late") {
+        courseStats[course].attended++;
+      }
+    });
+
+    const courses = Object.keys(courseStats).map(c => ({
+      course: c,
+      attendanceRate: Number(((courseStats[c].attended / courseStats[c].total) * 100).toFixed(1))
+    }));
+
+    // Status Share
+    const statusShare = { Present: 0, Absent: 0, Late: 0, Leave: 0 };
+    logs.forEach(l => {
+      if (statusShare[l.status] !== undefined) {
+        statusShare[l.status]++;
+      }
+    });
+
+    res.json({
+      success: true,
+      stats: {
+        totalRecords: logs.length,
+        courses,
+        statusShare
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+
+
 // Serve frontend static build files in production
 app.use(express.static(path.join(__dirname, "dist")));
 
 // Client-side fallback routing
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "dist", "index.html"));
+  if (req.accepts("html") && !req.path.includes(".")) {
+    res.sendFile(path.join(__dirname, "dist", "index.html"));
+  } else {
+    res.status(404).json({ error: "Not Found" });
+  }
 });
 
 app.listen(PORT, () => {

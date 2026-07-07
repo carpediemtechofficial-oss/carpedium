@@ -3,8 +3,7 @@
 import { useState } from "react";
 
 const WHATSAPP_URL =
-  "https://wa.me/917339512373?text=Hi%2C%20I%27m%20interested%20in%20your%20Full-Stack%2FGen%20AI%20program";
-// [TODO: verify this is the active business WhatsApp number before launch]
+  "https://wa.me/917339512373?text=Hello%2C%20I%20would%20like%20to%20know%20more%20about%20this%20course.";
 
 export default function WhatsAppButton() {
   const [hovered, setHovered] = useState(false);

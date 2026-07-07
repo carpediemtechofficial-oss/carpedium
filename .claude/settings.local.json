@@ -4,7 +4,21 @@
       "PowerShell(winget install OpenJS.NodeJS.LTS --silent --accept-package-agreements --accept-source-agreements)",
       "PowerShell(Get-ChildItem -Path components -Recurse -File | Select-Object FullName | ForEach-Object { $_.FullName.Replace\\(\\(Get-Location\\).Path + '\\\\', ''\\) })",
       "PowerShell(Get-ChildItem -Path lib -Recurse -File | Select-Object FullName | ForEach-Object { $_.FullName.Replace\\(\\(Get-Location\\).Path + '\\\\', ''\\) })",
-      "PowerShell(python --version)"
+      "PowerShell(python --version)",
+      "Bash(claude mcp *)",
+      "PowerShell(Get-Command claude -ErrorAction SilentlyContinue)",
+      "Bash(npx tsc *)",
+      "Bash(npx vite *)",
+      "Bash(node -e \"const fs=require\\('fs'\\);const t=fs.readFileSync\\('.env.local','utf8'\\);console.log\\(t.split\\(/\\\\r?\\\\n/\\).map\\(l=>l.split\\('='\\)[0]\\).filter\\(Boolean\\).join\\(', '\\)\\)\")",
+      "Bash(node \"C:\\\\Users\\\\Rishi\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Rishi-Downloads-carpedium-tech\\\\7f1f623a-87c4-4a7f-a275-beedc61e9f1c\\\\scratchpad\\\\seed.mjs\")",
+      "Bash(node \"C:/Users/Rishi/AppData/Local/Temp/claude/C--Users-Rishi-Downloads-carpedium-tech/7f1f623a-87c4-4a7f-a275-beedc61e9f1c/scratchpad/test.mjs\")",
+      "Bash(node \"C:/Users/Rishi/AppData/Local/Temp/claude/C--Users-Rishi-Downloads-carpedium-tech/7f1f623a-87c4-4a7f-a275-beedc61e9f1c/scratchpad/seed.mjs\")",
+      "Bash(node \"C:/Users/Rishi/AppData/Local/Temp/claude/C--Users-Rishi-Downloads-carpedium-tech/7f1f623a-87c4-4a7f-a275-beedc61e9f1c/scratchpad/authusers.mjs\")",
+      "Bash(node -e ' *)",
+      "Bash(echo \"=== plugin.json ===\" && cat \"C:/Users/Rishi/AppData/Local/Temp/claude/C--Users-Rishi-Downloads-carpedium-tech/7f1f623a-87c4-4a7f-a275-beedc61e9f1c/scratchpad/Anthropic-Cybersecurity-Skills/.claude-plugin/plugin.json\" && echo \"\" && echo \"=== global .claude/skills ===\" && ls -la \"C:/Users/Rishi/.claude/skills/\" 2>&1 | head -20 && echo \"\" && echo \"=== existing global skills count ===\" && ls \"C:/Users/Rishi/.claude/skills/\" 2>/dev/null | wc -l && echo \"=== total repo size ===\" && du -sh \"C:/Users/Rishi/AppData/Local/Temp/claude/C--Users-Rishi-Downloads-carpedium-tech/7f1f623a-87c4-4a7f-a275-beedc61e9f1c/scratchpad/Anthropic-Cybersecurity-Skills/skills\" 2>/dev/null)",
+      "Bash(npx --yes skills add Paramchoudhary/ResumeSkills -g)",
+      "Bash(npx --yes skills add Quick-irritablebowelsyndrome2047/ats-optimized-resume-agent-skill -g)",
+      "Bash(grep -v -E \"Cloning|Discovering|Installing skill|^\\\\s*$\")"
     ]
   }
 }

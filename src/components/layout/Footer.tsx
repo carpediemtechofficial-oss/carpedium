@@ -1,4 +1,8 @@
+"use client";
 
+import { playTick } from "@/lib/sound";
+import { useSettings } from "@/hooks/useSettings";
+import DeveloperCredit from "./DeveloperCredit";
 
 const COURSE_LINKS = [
   { href: "#programs", label: "Full-Stack Development" },
@@ -18,24 +22,21 @@ const RESOURCE_LINKS = [
   { href: "#resources", label: "Interview Prep" },
 ];
 
-// Genuine Coimbatore localities — describes reach, not fabricated branch claims.
-const LOCALITIES = [
-  "Saravanampatty", "Peelamedu", "RS Puram", "Gandhipuram", "Race Course",
-  "Ganapathy", "Singanallur", "Ramanathapuram", "Vadavalli", "Kovaipudur",
-  "Sundarapuram", "Ondipudur", "Avinashi Road", "Sitra", "Thudiyalur",
-  "Kalapatti", "Kuniyamuthur", "Podanur", "Sowripalayam",
-];
+type FooterColumnProps = {
+  title: string;
+  links: { href: string; label: string }[];
+};
 
-function FooterColumn({ title, links }: { title: string; links: { href: string; label: string }[] }) {
+function FooterColumn({ title, links }: FooterColumnProps) {
   return (
     <div>
-      <p className="font-mono text-xs uppercase tracking-wide text-primary-strong">{title}</p>
+      <p className="font-mono text-xs uppercase tracking-wider text-teal font-bold">{title}</p>
       <ul className="mt-4 space-y-2.5">
         {links.map((link) => (
           <li key={link.label}>
             <a
               href={link.href}
-              className="text-sm text-ink-dim hover:text-ink"
+              className="text-sm text-slate-400 hover:text-white transition-colors duration-200"
             >
               {link.label}
             </a>
@@ -46,71 +47,171 @@ function FooterColumn({ title, links }: { title: string; links: { href: string; 
   );
 }
 
-export default function Footer() {
+// ─── Inline social icons (kept local so they don't depend on the
+// lucide-react version installed in this project) ────────────────
+type IconProps = React.SVGProps<SVGSVGElement>;
+
+const IconLinkedin = (p: IconProps) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+    <rect x="2" y="9" width="4" height="12" /><circle cx="4" cy="4" r="2" />
+  </svg>
+);
+const IconGithub = (p: IconProps) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+    <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+  </svg>
+);
+const IconX = (p: IconProps) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" {...p}>
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z" />
+  </svg>
+);
+const IconInstagram = (p: IconProps) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+  </svg>
+);
+const IconYoutube = (p: IconProps) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" {...p}>
+    <path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8ZM9.5 15.5v-7l6.3 3.5Z" />
+  </svg>
+);
+
+const SOCIAL_PLATFORMS = [
+  { key: "linkedin", label: "LinkedIn", Icon: IconLinkedin },
+  { key: "github", label: "GitHub", Icon: IconGithub },
+  { key: "twitter", label: "X (Twitter)", Icon: IconX },
+  { key: "instagram", label: "Instagram", Icon: IconInstagram },
+  { key: "youtube", label: "YouTube", Icon: IconYoutube },
+] as const;
+
+type FooterProps = {
+  onAdminClick?: () => void;
+};
+
+export default function Footer({ onAdminClick }: FooterProps) {
+  const { settings } = useSettings();
+  const { contact, social, branding, footer } = settings;
+
   return (
-    <footer className="relative border-t border-line bg-surface-alt px-6 pt-16">
-      <div className="mx-auto max-w-6xl">
+    <footer className="relative border-t border-slate-800 bg-slate-950 text-slate-300 px-6 pt-16 pb-8">
+      {/* Background Subtle Green Radial Glow */}
+      <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-teal/5 blur-[100px] pointer-events-none z-0" />
+
+      <div className="mx-auto max-w-6xl relative z-10">
+        
+        {/* Columns Grid */}
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
           <FooterColumn title="Courses" links={COURSE_LINKS} />
           <FooterColumn title="Company" links={COMPANY_LINKS} />
           <FooterColumn title="Resources" links={RESOURCE_LINKS} />
           <div>
-            <p className="font-mono text-xs uppercase tracking-wide text-primary-strong">Contact</p>
-            <ul className="mt-4 space-y-2.5 text-sm text-ink-dim">
-              <li>
-                <a href="mailto:carpediemtechinnovations@gmail.com" className="hover:text-ink">
-                  carpediemtechinnovations@gmail.com
-                </a>
-              </li>
-              <li>
-                <a href="tel:+917339512373" className="hover:text-ink">
-                  +91 73395 12373
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://linkedin.com/in/carpediem-tech-innovations"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-ink"
-                >
-                  LinkedIn
-                </a>
-              </li>
+            <p className="font-mono text-xs uppercase tracking-wider text-teal font-bold">Contact</p>
+            <ul className="mt-4 space-y-2.5 text-sm">
+              {contact.email && (
+                <li>
+                  <a href={`mailto:${contact.email}`} className="text-slate-400 hover:text-white transition-colors">
+                    {contact.email}
+                  </a>
+                </li>
+              )}
+              {contact.phone && (
+                <li>
+                  <a href={`tel:${contact.phone.replace(/\s/g, "")}`} className="text-slate-400 hover:text-white transition-colors">
+                    {contact.phone}
+                  </a>
+                </li>
+              )}
+              {contact.email && social.linkedin && (
+                <li>
+                  <a
+                    href={social.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-slate-400 hover:text-white transition-colors"
+                  >
+                    LinkedIn
+                  </a>
+                </li>
+              )}
             </ul>
           </div>
         </div>
 
-        <div className="mt-14 border-t border-line pt-8">
-          <p className="font-mono text-xs uppercase tracking-wide text-ink-dim">
-            Serving learners across Coimbatore
-          </p>
-          <p className="mt-3 max-w-4xl text-sm leading-relaxed text-ink-dim/80">
-            {LOCALITIES.join(", ")}
-          </p>
-        </div>
-
-        <div className="mt-10 flex flex-col gap-6 border-t border-line py-8 sm:flex-row sm:items-center sm:justify-between">
+        {/* Bottom Banner */}
+        <div className="mt-10 flex flex-col gap-6 border-t border-slate-800 pt-8 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <img
-              src="/logo/carpediem-mark.jpg"
-              alt="Carpediem Tech Innovations"
-              width={36}
-              height={36}
-              className="rounded-full"
+              src={branding.logo}
+              alt={branding.brandName}
+              width={34}
+              height={34}
+              className="rounded-full border border-slate-800 select-none"
             />
             <div>
-              <p className="font-display text-sm font-bold text-ink">
-                CARPEDIEM TECH INNOVATIONS
+              <p className="font-display text-sm font-bold text-white tracking-wide">
+                {branding.brandName}
               </p>
-              <p className="text-xs text-ink-dim">Coimbatore, Tamil Nadu</p>
+              <p className="text-[10px] text-slate-500 font-mono">{contact.address}</p>
             </div>
           </div>
 
-          <p className="text-xs text-ink-dim/70">
-            © {new Date().getFullYear()} Carpediem Tech Innovations. All rights reserved.
-          </p>
+          {/* Social Icons */}
+          <div className="flex items-center gap-2.5">
+            {SOCIAL_PLATFORMS.map(({ key, label, Icon }) => {
+              const href = (social as Record<string, string>)[key];
+              const base = "h-9 w-9 rounded-full border flex items-center justify-center transition-all";
+              return href ? (
+                <a
+                  key={key}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={label}
+                  onMouseEnter={playTick}
+                  className={`${base} border-slate-700 text-slate-300 hover:text-white hover:border-teal hover:bg-teal/10 hover:-translate-y-0.5`}
+                >
+                  <Icon className="h-4 w-4" />
+                </a>
+              ) : (
+                <span
+                  key={key}
+                  aria-label={`${label} (not configured)`}
+                  title={`${label} — add the URL in Settings → Social Links`}
+                  className={`${base} border-slate-800 text-slate-600`}
+                >
+                  <Icon className="h-4 w-4" />
+                </span>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-6 text-xs text-slate-500 font-mono">
+            {onAdminClick && (
+              <button
+                type="button"
+                onClick={() => {
+                  playTick();
+                  onAdminClick();
+                }}
+                className="hover:text-teal font-bold uppercase tracking-wider transition-colors cursor-pointer"
+              >
+                Admin Portal
+              </button>
+            )}
+            <span>
+              © {new Date().getFullYear()} {footer.copyright}
+            </span>
+          </div>
+
         </div>
+
+        {/* Developer Credit (obfuscated + self-healing + tamper alert) */}
+        <DeveloperCredit />
+
       </div>
     </footer>
   );

@@ -19,11 +19,12 @@ export default function Reveal({
 
   return (
     <Component
-      initial={{ opacity: 0, y: 24 }}
+      initial={{ opacity: 0, y: 12 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.3 }}
-      transition={{ duration: 0.6, delay, ease: [0.22, 1, 0.36, 1] as const }}
+      viewport={{ once: true, amount: 0.15 }}
+      transition={{ duration: 0.4, delay, ease: [0.16, 1, 0.3, 1] as const }}
       className={className}
+      style={{ willChange: "transform, opacity" }}
     >
       {children}
     </Component>

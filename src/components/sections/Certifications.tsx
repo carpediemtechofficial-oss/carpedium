@@ -53,51 +53,13 @@ export default function Certifications() {
           {/* Right Column: Premium Certificate Mockup */}
           <div className="lg:col-span-6 flex justify-center w-full">
             <Reveal delay={0.15}>
-              <div className="relative w-full max-w-[460px] aspect-[1.414/1] rounded-2xl border border-teal/15 bg-slate-50/50 p-6 sm:p-8 shadow-2xl glassmorphic overflow-hidden flex flex-col justify-between select-none">
-                
-                {/* Decorative mesh background */}
-                <div className="absolute inset-0 z-0 pointer-events-none opacity-40 bg-[radial-gradient(ellipse_at_top_right,var(--color-primary-light)_10%,transparent_60%)]" />
-
-                {/* Border corners */}
-                <div className="absolute top-4 left-4 h-4 w-4 border-t border-l border-primary/45" />
-                <div className="absolute top-4 right-4 h-4 w-4 border-t border-r border-primary/45" />
-                <div className="absolute bottom-4 left-4 h-4 w-4 border-b border-l border-primary/45" />
-                <div className="absolute bottom-4 right-4 h-4 w-4 border-b border-r border-primary/45" />
-
-                {/* Header */}
-                <div className="relative z-10 flex items-start justify-between">
-                  <div>
-                    <h5 className="font-mono text-[9px] uppercase tracking-widest text-primary-strong">Carpediem Tech</h5>
-                    <p className="font-display text-[10px] font-bold text-ink mt-0.5">Innovations Academy</p>
-                  </div>
-                  <div className="h-10 w-10 rounded-full border border-teal/20 bg-white flex items-center justify-center font-bold text-xs text-primary-strong shadow-sm">
-                    CD
-                  </div>
-                </div>
-
-                {/* Middle Text */}
-                <div className="relative z-10 my-4 text-center">
-                  <p className="font-mono text-[8px] uppercase tracking-widest text-ink-dim">This certifies that the graduate has completed</p>
-                  <h3 className="font-display text-base sm:text-lg font-bold text-ink mt-2 text-gradient">
-                    Advanced Engineering Cohort
-                  </h3>
-                  <p className="font-mono text-[9px] text-ink-dim mt-2">
-                    Validating mastery in React, NodeJS, LLM RAG pipelines & AWS Devops.
-                  </p>
-                </div>
-
-                {/* Footer details */}
-                <div className="relative z-10 flex items-end justify-between border-t border-teal/5 pt-4">
-                  <div className="text-left">
-                    <p className="font-mono text-[7px] uppercase tracking-wider text-ink-dim">Verification ID</p>
-                    <p className="font-mono text-[9px] text-ink font-bold">CD-2026-X89B</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-mono text-[7px] uppercase tracking-wider text-ink-dim">Authorized Seal</p>
-                    <p className="font-display text-[9px] font-bold text-primary-strong">APPROVED COHORT</p>
-                  </div>
-                </div>
-
+              <div className="relative w-full max-w-[460px] group cursor-pointer overflow-hidden rounded-2xl border border-teal/15 shadow-xl transition-all duration-300 hover:scale-[1.01] hover:shadow-2xl">
+                <img
+                  src="/images/certificate.png"
+                  alt="Carpediem Certificate of Completion - Software Development Internship"
+                  className="w-full h-auto object-contain select-none"
+                  loading="lazy"
+                />
               </div>
             </Reveal>
           </div>

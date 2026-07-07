@@ -1,29 +1,12 @@
 import Reveal from "@/components/ui/Reveal";
 import SectionEyebrow from "@/components/ui/SectionEyebrow";
-import HiringMarquee from "@/components/ui/HiringMarquee";
-
-const TESTIMONIALS = [
-  {
-    quote: "“The code reviews here are brutal but essential. My mentor at Carpediem helped me restructure a database model that resolved a major bottlenecks. I was hired as a React Dev in Bengaluru three weeks after graduating.”",
-    name: "Preethi Srinivasan",
-    track: "Full-Stack Cohort",
-    outcome: "SDE-1 @ SaaS Hub",
-  },
-  {
-    quote: "“I transitioned from manual testing to AI automation. Building a multi-agent n8n service from scratch that handles customer returns taught me more about vector databases and prompt workflows than any tutorial series.”",
-    name: "Gokul Krishnan",
-    track: "Generative AI Cohort",
-    outcome: "AI Engineer @ DevStudio",
-  },
-  {
-    quote: "“Being a career-switcher from support, I was overwhelmed. The 1:5 mentor ratio kept me accountable. Shipped three real deployments on AWS, got my resume refactored, and unlocked a direct referral into a SDE role.”",
-    name: "Naveen Prasad",
-    track: "Full-Stack Cohort",
-    outcome: "Software Engineer @ FinTech Corp",
-  },
-];
+import { useTestimonials } from "@/hooks/useContent";
+import OptimizedImage from "@/components/ui/OptimizedImage";
 
 export default function Outcomes() {
+  // Single source of truth: published testimonials from Supabase (realtime).
+  const { testimonials, isLoading } = useTestimonials();
+
   return (
     <section id="outcomes" className="relative px-6 py-24 sm:py-32 bg-slate-50/50">
       <div className="mx-auto max-w-6xl">
@@ -39,42 +22,62 @@ export default function Outcomes() {
           </p>
         </Reveal>
 
-        {/* Hiring Partners Logo Marquee */}
-        <Reveal delay={0.1}>
-          <div className="mt-12 border-y border-teal/10 py-8 bg-white/40 rounded-2xl">
-            <p className="font-mono text-[10px] uppercase tracking-widest text-center text-ink-dim mb-6">
-              Hiring Networks & Recruitment Partners
-            </p>
-            <HiringMarquee />
+
+
+        {isLoading && (
+          <div className="mt-16 grid grid-cols-1 gap-6 lg:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-56 rounded-2xl border border-teal/10 bg-white skeleton-shimmer animate-shimmer" />
+            ))}
           </div>
-        </Reveal>
+        )}
+
+        {!isLoading && testimonials.length === 0 && (
+          <p className="mt-16 text-sm text-ink-dim">Success stories coming soon.</p>
+        )}
 
         {/* Success Stories Grid */}
         <div className="mt-16 grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {TESTIMONIALS.map((t, i) => (
-            <Reveal key={t.name} delay={i * 0.08}>
-              <blockquote className="group h-full rounded-2xl border border-teal/10 bg-white p-6 shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between">
-                <div>
-                  {/* Rating Stars mock */}
-                  <div className="flex gap-1 text-primary text-xs mb-4">⭐⭐⭐⭐⭐</div>
-                  <p className="text-xs sm:text-sm italic text-ink leading-relaxed">
-                    {t.quote}
-                  </p>
-                </div>
-                <footer className="mt-6 pt-4 border-t border-teal/5 flex flex-col">
-                  <span className="font-display text-sm font-extrabold text-ink leading-none">
-                    {t.name}
-                  </span>
-                  <span className="font-mono text-[9px] uppercase tracking-wider text-primary mt-1.5 leading-none">
-                    {t.track}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 rounded bg-teal/5 border border-teal/10 px-2 py-0.5 mt-2.5 text-[9px] font-mono font-bold text-primary-strong uppercase w-fit">
-                    💼 {t.outcome}
-                  </span>
-                </footer>
-              </blockquote>
-            </Reveal>
-          ))}
+          {testimonials.map((t, i) => {
+            const outcome = [t.job_role, t.company].filter(Boolean).join(" @ ");
+            const stars = "⭐".repeat(Math.max(0, Math.min(5, t.rating ?? 5)));
+            return (
+              <Reveal key={t.id} delay={i * 0.08}>
+                <blockquote className="group h-full rounded-2xl border border-teal/10 bg-white p-6 shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between">
+                  <div>
+                    <div className="flex gap-1 text-primary text-xs mb-4">{stars}</div>
+                    <p className="text-xs sm:text-sm italic text-ink leading-relaxed">
+                      “{t.review}”
+                    </p>
+                  </div>
+                  <footer className="mt-6 pt-4 border-t border-teal/5 flex items-center gap-3">
+                    {t.photo && (
+                      <OptimizedImage
+                        src={t.photo}
+                        alt={t.student_name}
+                        className="h-10 w-10 rounded-full object-cover border border-teal/15"
+                      />
+                    )}
+                    <div className="flex flex-col">
+                      <span className="font-display text-sm font-extrabold text-ink leading-none">
+                        {t.student_name}
+                      </span>
+                      {t.course && (
+                        <span className="font-mono text-[9px] uppercase tracking-wider text-primary mt-1.5 leading-none">
+                          {t.course}
+                        </span>
+                      )}
+                      {outcome && (
+                        <span className="inline-flex items-center gap-1.5 rounded bg-teal/5 border border-teal/10 px-2 py-0.5 mt-2.5 text-[9px] font-mono font-bold text-primary-strong uppercase w-fit">
+                          💼 {outcome}
+                        </span>
+                      )}
+                    </div>
+                  </footer>
+                </blockquote>
+              </Reveal>
+            );
+          })}
         </div>
       </div>
     </section>

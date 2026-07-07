@@ -23,7 +23,13 @@ export default function CircuitTrace({
 }: CircuitTraceProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const pathRef = useRef<SVGPathElement>(null);
-  const [activeIndex, setActiveIndex] = useState(-1);
+  const glowPathRef = useRef<SVGPathElement>(null);
+  const [activeIndex, useStateIndex] = useState(-1);
+  const activeIndexRef = useRef(-1); 
+  const setActiveIndex = (val: number) => {
+    useStateIndex(val);
+    activeIndexRef.current = val;
+  };
 
   const width = 1000;
   const height = 80;
@@ -37,8 +43,9 @@ export default function CircuitTrace({
     ).matches;
 
     const path = pathRef.current;
+    const glowPath = glowPathRef.current;
     const container = containerRef.current;
-    if (!path || !container) return;
+    if (!path || !glowPath || !container) return;
 
     if (prefersReducedMotion) {
       setActiveIndex(stages.length - 1);
@@ -47,10 +54,10 @@ export default function CircuitTrace({
 
     gsap.registerPlugin(ScrollTrigger);
     const length = path.getTotalLength();
-    gsap.set(path, { strokeDasharray: length, strokeDashoffset: length });
+    gsap.set([path, glowPath], { strokeDasharray: length, strokeDashoffset: length });
 
     const ctx = gsap.context(() => {
-      gsap.to(path, {
+      gsap.to([path, glowPath], {
         strokeDashoffset: 0,
         ease: "none",
         scrollTrigger: {
@@ -89,6 +96,17 @@ export default function CircuitTrace({
           stroke="var(--color-line)"
           strokeWidth={2}
           fill="none"
+        />
+
+        {/* Glow bloom overlay */}
+        <path
+          ref={glowPathRef}
+          d={`M ${padding} ${height / 2} L ${width - padding} ${height / 2}`}
+          stroke={`url(#grad-${id})`}
+          strokeWidth={6}
+          opacity={0.65}
+          fill="none"
+          style={{ filter: "blur(4px)" }}
         />
 
         <path

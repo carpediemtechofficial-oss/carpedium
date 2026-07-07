@@ -1,282 +1,337 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import Button from "@/components/ui/Button";
+import { motion, AnimatePresence, useInView, useMotionValue, useSpring } from "framer-motion";
 
-const HIGHLIGHTS = [
-  "Full-Stack Development",
-  "Generative AI Orchestration",
-  "Cloud & DevOps Architecture",
-  "Cybersecurity Systems",
-  "Advanced AI & Machine Learning"
+// ─── Data ───────────────────────────────────────────────────
+const TECH_PILLS = [
+  { label: "Full-Stack Development", icon: "⚡" },
+  { label: "Artificial Intelligence", icon: "🤖" },
+  { label: "Cloud Computing", icon: "☁️" },
+  { label: "Cybersecurity", icon: "🛡️" },
 ];
 
-/* 
-================================================================================
-GEMINI PROMPT GENERATION KIT (For visual asset creation)
-================================================================================
+const STATS = [
+  { value: 95, suffix: "%", label: "Placement Success" },
+  { label: "1:1 Expert Mentorship", raw: "1:1" },
+  { value: 12, suffix: "+", label: "Production Projects" },
+];
 
-1. HERO BACKGROUND VIDEO PROMPT:
-   "Create a premium, cinematic 4K video loop, abstract network node visualization. Soft glowing teal and cyan lines slowly connecting across a clean, minimal white background. Thin data packets pulsing along paths. Very shallow depth of field, high-tech, minimalist, luxury aesthetic, 30fps, seamless loop."
+// ─── CountUp Hook ─────────────────────────────────────────
+function useCountUp(target: number, duration = 1.8) {
+  const [count, setCount] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true });
 
-2. SECONDARY LOOPING VIDEOS PROMPT:
-   "Create a close-up, high-tech looping animation. Abstract clean white glass panels rotating slowly with soft light refraction. Neon cyan and royal blue glowing accent lines tracing edges. Modern, minimalistic design, Apple/Stripe-like luxury advertising quality."
+  useEffect(() => {
+    if (!inView) return;
+    let start = 0;
+    const step = target / (duration * 60);
+    const timer = setInterval(() => {
+      start += step;
+      if (start >= target) {
+        setCount(target);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(start));
+      }
+    }, 1000 / 60);
+    return () => clearInterval(timer);
+  }, [inView, target, duration]);
 
-3. PREMIUM HERO ILLUSTRATION PROMPT:
-   "Vector flat design illustration of a professional modern software workstation. Floating glass layers showing database schemas, UI wireframes, and neural network graphs. Color palette: Clean white background, soft teal highlights, cyan gradients, metallic blue. High detail, isometric perspective."
+  return { count, ref };
+}
 
-4. AI-GENERATED BACKGROUND GRAPHIC PROMPT:
-   "Sleek, futuristic abstract mesh gradient. Shifting bright cyan, soft teal, and luxury sky blue wave shapes blended together with noise texture. Pure clean studio lighting, high contrast, web landing page header style, premium look."
+// ─── StatItem ─────────────────────────────────────────────
+function StatItem({ stat }: { stat: (typeof STATS)[0] }) {
+  const { count, ref } = useCountUp(stat.value ?? 0);
+  return (
+    <div className="text-left">
+      <p className="font-display text-3xl sm:text-4xl font-bold text-ink tracking-tight">
+        {stat.raw ? (
+          <span>{stat.raw}</span>
+        ) : (
+          <span ref={ref}>
+            {count}
+            {stat.suffix}
+          </span>
+        )}
+      </p>
+      <p className="font-mono text-[9px] uppercase tracking-wider text-ink-dim mt-1">
+        {stat.label}
+      </p>
+    </div>
+  );
+}
 
-5. MODERN SVG ICONS PROMPT:
-   "A collection of clean, thin-line circuit design icons. Hexagonal shield shape, connection node, prompt terminal cursor, brain network. Tech, modern, soft teal outline, transparent background."
-================================================================================
-*/
+// ─── Hero ─────────────────────────────────────────────────
+import { useSettings } from "@/hooks/useSettings";
 
 export default function Hero() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [highlightIdx, setHighlightIdx] = useState(0);
-
-  // Mouse Parallax tracking
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!containerRef.current) return;
-      const { clientWidth, clientHeight } = containerRef.current;
-      const x = (e.clientX / clientWidth - 0.5) * 35; // displacement strength
-      const y = (e.clientY / clientHeight - 0.5) * 35;
-      setMousePos({ x, y });
-    };
-
-    window.addEventListener("mousemove", handleMouseMove, { passive: true });
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
-
-  // Text rotator interval
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setHighlightIdx((prev) => (prev + 1) % HIGHLIGHTS.length);
-    }, 3200);
-    return () => clearInterval(interval);
-  }, []);
+  const { settings } = useSettings();
 
   return (
     <section
       id="hero"
       ref={containerRef}
-      className="relative min-h-[92vh] flex items-center justify-center overflow-hidden bg-white pt-24 pb-16 gradient-mesh"
+      className="relative min-h-[92vh] flex items-center justify-center overflow-x-clip bg-white pt-32 pb-32"
       aria-label="Welcome to Carpediem Tech Innovations"
     >
-      {/* Background Cinematic Video & Gradient Overlay */}
+      {/* ── Background ──────────────────────────────────── */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none">
+        {/* Existing hero video (very subtle) */}
         <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="absolute min-w-full min-h-full top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 object-cover opacity-[0.06] filter grayscale saturate-[0.5]"
+          autoPlay muted loop playsInline
+          className="absolute min-w-full min-h-full top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 object-cover opacity-[0.05] filter grayscale"
         >
-          {/* High-quality abstract tech loop */}
-          <source
-            src="https://assets.mixkit.co/videos/preview/mixkit-digital-animation-of-screens-and-numbers-31908-large.mp4"
-            type="video/mp4"
-          />
+          <source src="/hero-bg.mp4" type="video/mp4" />
         </video>
-        {/* Soft Animated Blurs */}
-        <div className="absolute top-1/4 left-1/4 h-[350px] w-[350px] rounded-full bg-primary/10 blur-[100px] animate-float-1" />
-        <div className="absolute bottom-1/4 right-1/4 h-[400px] w-[400px] rounded-full bg-accent/80 opacity-[0.07] blur-[120px] animate-float-2" />
+
+        {/* Radial gradient glow */}
+        <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[900px] h-[600px] rounded-full bg-gradient-radial from-teal/10 via-teal/[0.04] to-transparent blur-[80px]" />
+
+        {/* Corner accent glows */}
+        <div className="absolute top-1/3 -left-24 h-[350px] w-[350px] rounded-full bg-primary/10 blur-[100px] animate-float-1" />
+        <div className="absolute bottom-1/4 -right-24 h-[400px] w-[400px] rounded-full bg-accent/80 opacity-[0.06] blur-[120px] animate-float-2" />
+
+        {/* Technical grid */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(20,184,166,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(20,184,166,0.04)_1px,transparent_1px)] bg-[size:40px_40px]" />
+
+        {/* Diagonal shimmer line */}
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage:
+              "linear-gradient(135deg, rgba(20,184,166,0.6) 0%, transparent 50%, rgba(20,184,166,0.3) 100%)",
+          }}
+        />
       </div>
 
-      {/* Floating Particles Overlay */}
+      {/* ── Floating Particles ──────────────────────────── */}
       <div className="absolute inset-0 z-0 pointer-events-none select-none">
-        <svg className="w-full h-full opacity-60">
-          <circle cx="10%" cy="20%" r="2" fill="var(--color-primary)" className="animate-pulse" />
-          <circle cx="85%" cy="15%" r="3.5" fill="var(--color-accent)" className="animate-pulse" style={{ animationDelay: "1s" }} />
-          <circle cx="45%" cy="80%" r="2.5" fill="var(--color-primary-light)" className="animate-pulse" style={{ animationDelay: "1.5s" }} />
-          <circle cx="75%" cy="75%" r="3" fill="var(--color-primary-strong)" className="opacity-40 animate-bounce" style={{ animationDuration: "12s" }} />
-          <circle cx="15%" cy="65%" r="2" fill="var(--color-accent)" className="opacity-30 animate-bounce" style={{ animationDuration: "9s" }} />
+        <svg className="w-full h-full opacity-50">
+          <circle cx="8%"  cy="18%" r="2"   fill="var(--color-primary)"       className="animate-pulse" />
+          <circle cx="88%" cy="12%" r="3.5" fill="var(--color-accent)"        className="animate-pulse" style={{ animationDelay: "0.8s" }} />
+          <circle cx="45%" cy="82%" r="2.5" fill="var(--color-primary-light)" className="animate-pulse" style={{ animationDelay: "1.4s" }} />
+          <circle cx="72%" cy="72%" r="3"   fill="var(--color-primary-strong)"className="opacity-30 animate-bounce" style={{ animationDuration: "11s" }} />
+          <circle cx="18%" cy="60%" r="2"   fill="var(--color-accent)"        className="opacity-25 animate-bounce" style={{ animationDuration: "9s" }} />
+          <circle cx="60%" cy="10%" r="1.5" fill="var(--color-primary)"       className="animate-pulse" style={{ animationDelay: "2s" }} />
+          <circle cx="92%" cy="55%" r="2"   fill="var(--color-primary-light)" className="animate-pulse" style={{ animationDelay: "0.4s" }} />
         </svg>
       </div>
 
-      {/* Main Content & Parallax Cards */}
+      {/* ── Main Grid ───────────────────────────────────── */}
       <div className="relative z-10 mx-auto max-w-6xl px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center w-full">
-        
-        {/* Left Side: Staggered Typography, CTAs, Statistics */}
+
+        {/* ── Left Column ─────────────────────────────── */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 32 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="lg:col-span-7 text-left flex flex-col"
         >
-          {/* Trust Badge */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-teal/15 bg-teal/5 px-4 py-1.5 w-fit mb-6 shadow-sm">
-            <span className="h-2 w-2 rounded-full bg-primary animate-ping" />
-            <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-primary-strong">
-              Coimbatore&apos;s Elite Coding Academy
+          {/* Badge */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.05 }}
+            className="inline-flex items-center gap-2 rounded-full border border-teal/20 bg-teal/5 px-4 py-1.5 w-fit mb-7 shadow-sm"
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
             </span>
-          </div>
+            <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-primary-strong">
+              {settings.hero.eyebrow || "Coimbatore's Premier Software Engineering Academy"}
+            </span>
+          </motion.div>
 
-          {/* Staggered Heading */}
-          <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.08] text-ink tracking-tight">
-            Seize the Stack.
-            <span className="block mt-1 text-gradient">Master the Future.</span>
+          {/* Headline */}
+          <h1
+            className="font-display font-bold leading-[1.05] tracking-tight"
+            style={{ fontSize: "clamp(2.5rem, 6vw, 4.2rem)" }}
+          >
+            <motion.span
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className="block text-ink pb-1"
+            >
+              Build What's Next.
+            </motion.span>
+            <motion.span
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.12, ease: "easeOut" }}
+              className="block text-gradient pb-2"
+            >
+              The Skills Behind Tomorrow's Technology.
+            </motion.span>
           </h1>
 
-          {/* Rotating Highlights & Subtitle */}
-          <div className="h-10 mt-4 flex items-center">
-            <span className="font-mono text-xs uppercase tracking-wide text-ink-dim mr-2">Cohort Focus:</span>
-            <div className="relative overflow-hidden h-full flex-1">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={highlightIdx}
-                  initial={{ y: 25, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: -25, opacity: 0 }}
-                  transition={{ duration: 0.4, ease: "easeOut" }}
-                  className="absolute font-display text-lg sm:text-xl font-bold text-primary-strong"
-                >
-                  {HIGHLIGHTS[highlightIdx]}
-                </motion.div>
-              </AnimatePresence>
-            </div>
-          </div>
+          {/* Subheadline */}
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.26 }}
+            className="mt-5 max-w-xl text-base sm:text-[17px] text-ink-dim leading-relaxed"
+          >
+            {settings.hero.subtitle ||
+              "Master Full-Stack Development, Artificial Intelligence, Cloud Computing, and Cybersecurity through project-based learning, expert mentorship, internships, and industry-recognized certifications."}
+          </motion.p>
 
-          <p className="mt-4 max-w-xl text-base sm:text-lg text-ink-dim leading-relaxed">
-            Premium, project-led coding cohorts with 1-on-1 mentorship. Accelerate your career in software development and artificial intelligence with our industry-driven models in Coimbatore.
-          </p>
+          {/* Technology Pills */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.38 }}
+            className="mt-6 flex flex-wrap gap-2"
+          >
+            {TECH_PILLS.map((pill, i) => (
+              <motion.span
+                key={pill.label}
+                initial={{ opacity: 0, scale: 0.88 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.42 + i * 0.07, duration: 0.3 }}
+                whileHover={{ y: -2, boxShadow: "0 6px 20px rgba(20,184,166,0.2)" }}
+                className="inline-flex items-center gap-1.5 rounded-full border border-teal/20 bg-teal/5 px-3.5 py-1.5 text-xs font-mono font-bold text-primary-strong shadow-sm cursor-default transition-colors hover:bg-teal/10 hover:border-teal/40"
+              >
+                <span className="text-sm">{pill.icon}</span>
+                {pill.label}
+              </motion.span>
+            ))}
+          </motion.div>
 
-          {/* CTA Group */}
-          <div className="mt-8 flex flex-wrap gap-4 items-center">
-            <Button href="#courses" variant="primary" className="shadow-lg shadow-primary/10">
-              Explore Catalog
-            </Button>
-            <Button href="#contact" variant="secondary">
-              Talk to a Advisor
-            </Button>
-          </div>
+          {/* CTA Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.5 }}
+            className="mt-8 flex flex-wrap gap-3 items-center"
+          >
+            {/* Primary */}
+            <motion.a
+              href="#courses"
+              whileHover={{ y: -2, boxShadow: "0 12px 30px rgba(20,184,166,0.3)" }}
+              whileTap={{ scale: 0.97 }}
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3.5 font-mono text-[11px] font-bold uppercase tracking-wider text-white shadow-lg shadow-primary/20 transition-colors hover:bg-primary-light"
+            >
+              Explore Courses
+              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                <path d="M5 12h14m-7-7 7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </motion.a>
 
-          {/* Trust Badges */}
-          <div className="mt-12 pt-8 border-t border-teal/10 grid grid-cols-3 gap-4 items-center">
-            <div>
-              <p className="font-display text-2xl font-bold text-ink">95%</p>
-              <p className="font-mono text-[9px] uppercase tracking-wider text-ink-dim">Placement Success</p>
-            </div>
-            <div>
-              <p className="font-display text-2xl font-bold text-ink">1:1</p>
-              <p className="font-mono text-[9px] uppercase tracking-wider text-ink-dim">Mentor Feedback</p>
-            </div>
-            <div>
-              <p className="font-display text-2xl font-bold text-ink">12+</p>
-              <p className="font-mono text-[9px] uppercase tracking-wider text-ink-dim">Production Projects</p>
-            </div>
-          </div>
+            {/* Secondary */}
+            <motion.a
+              href="#contact"
+              whileHover={{ y: -2, backgroundColor: "rgba(20,184,166,0.05)" }}
+              whileTap={{ scale: 0.97 }}
+              className="inline-flex items-center gap-2 rounded-full border border-teal/30 bg-transparent px-6 py-3.5 font-mono text-[11px] font-bold uppercase tracking-wider text-primary-strong transition-all"
+            >
+              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2}>
+                <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.66A2 2 0 012 3h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 10.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Talk to an Advisor
+            </motion.a>
+          </motion.div>
+
+          {/* Statistics */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.64 }}
+            className="mt-10 pt-8 border-t border-teal/10 grid grid-cols-3 gap-4 items-start"
+          >
+            {STATS.map((stat) => (
+              <StatItem key={stat.label} stat={stat} />
+            ))}
+          </motion.div>
         </motion.div>
 
-        {/* Right Side: Interactive 3D Depth Parallax Illustration & floating widgets */}
-        <div className="lg:col-span-5 relative flex items-center justify-center min-h-[350px] w-full">
-          {/* Center Graphic Glow */}
-          <div className="absolute h-64 w-64 rounded-full bg-gradient-to-tr from-primary to-accent opacity-[0.12] blur-[50px] z-0" />
+        {/* ── Right Column: Video ─────────────────────── */}
+        <div className="lg:col-span-5 relative flex items-center justify-center min-h-[350px] w-full lg:pr-8 xl:pr-12">
+          {/* Background glow blob */}
+          <div className="absolute h-72 w-72 rounded-full bg-gradient-to-tr from-primary to-accent opacity-[0.14] blur-[70px] z-0" />
 
-          {/* Parallax Card Container */}
+          {/* Floating ring decoration */}
           <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+            className="absolute h-[340px] w-[340px] rounded-full border border-teal/8 border-dashed z-0"
+          />
+          <motion.div
+            animate={{ rotate: -360 }}
+            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            className="absolute h-[280px] w-[280px] rounded-full border border-teal/5 z-0"
+          />
+
+          {/* Video card */}
+          <motion.div
+            initial={{ opacity: 0, y: 24, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.9, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            animate-float-1
+            whileHover={{ scale: 1.02, y: -6 }}
             style={{
-              x: mousePos.x,
-              y: mousePos.y,
-              rotateX: mousePos.y * -0.2,
-              rotateY: mousePos.x * 0.2,
+              animation: "float1 6s ease-in-out infinite",
             }}
-            transition={{ type: "spring", stiffness: 100, damping: 20 }}
-            className="relative z-10 w-full max-w-[360px] aspect-[4/5] flex items-center justify-center"
+            className="relative z-10 w-full max-w-[460px] aspect-video rounded-2xl overflow-hidden border border-teal/25 bg-slate-950/90 shadow-[0_30px_80px_-20px_rgba(20,184,166,0.25)] p-1.5 cursor-pointer"
           >
-            {/* Base Frame Layer */}
-            <div className="absolute inset-0 rounded-[24px] bg-gradient-to-br from-white/80 to-white/30 border border-teal/10 p-6 shadow-2xl glassmorphic backdrop-blur-md flex flex-col justify-between overflow-hidden">
-              {/* Inner Decorative Code snippet */}
-              <div className="font-mono text-[10px] text-primary-strong/80 leading-normal select-none">
-                <span className="text-accent">const</span> learner = {"{"} <br />
-                &nbsp;&nbsp;skills: [&apos;Full-Stack&apos;, &apos;GenAI&apos;], <br />
-                &nbsp;&nbsp;projects: [&apos;RealProductionApp&apos;], <br />
-                &nbsp;&nbsp;hired: <span className="text-teal font-bold">true</span> <br />
-                {"}"}; <br />
-                <span className="text-ink-dim">// Ready to scale...</span>
-              </div>
-              
-              <div className="mt-8 flex flex-col gap-2">
-                <div className="h-2.5 w-3/4 rounded-full bg-teal/10 overflow-hidden">
-                  <div className="h-full w-4/5 rounded-full bg-primary animate-pulse" />
-                </div>
-                <div className="h-2 w-1/2 rounded-full bg-teal/10" />
-              </div>
+            {/* Glossy sheen overlay */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.04] via-transparent to-teal/[0.03] pointer-events-none z-20 rounded-2xl" />
+            {/* Glow edge */}
+            <div className="absolute inset-0 rounded-2xl shadow-[inset_0_0_30px_rgba(20,184,166,0.08)] pointer-events-none z-20" />
 
-              {/* Bottom logo block */}
-              <div className="flex items-center gap-3 border-t border-teal/5 pt-4">
-                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">C</div>
-                <div>
-                  <p className="font-mono text-[9px] uppercase tracking-wider text-ink-dim">Build Platform</p>
-                  <p className="font-display text-[11px] font-bold text-ink">v2.4 Production</p>
-                </div>
-              </div>
+            <video
+              autoPlay muted loop playsInline
+              className="w-full h-full rounded-xl object-cover"
+            >
+              <source src="/hero-bg.mp4" type="video/mp4" />
+            </video>
+
+            {/* Corner badges */}
+            <div className="absolute bottom-4 left-4 z-30 flex items-center gap-1.5 rounded-full bg-black/70 backdrop-blur-sm border border-white/10 px-3 py-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-teal animate-pulse" />
+              <span className="font-mono text-[9px] uppercase text-white/80 font-bold">Live Sessions</span>
             </div>
+            <div className="absolute top-4 right-4 z-30 rounded-full bg-teal px-2.5 py-1 font-mono text-[9px] uppercase text-slate-950 font-bold shadow-lg">
+              Coimbatore
+            </div>
+          </motion.div>
 
-            {/* Float Layer 1: Stat Panel (Top-Right, offset, parallax displacement) */}
-            <motion.div
-              style={{
-                x: mousePos.x * 1.5,
-                y: mousePos.y * 1.5,
-              }}
-              className="absolute -top-6 -right-6 rounded-2xl border border-teal/10 bg-white/90 p-4 shadow-xl backdrop-blur-md flex items-center gap-3 w-48"
-            >
-              <div className="h-9 w-9 rounded-xl bg-teal/10 flex items-center justify-center text-primary-strong font-bold">⚡</div>
-              <div>
-                <p className="font-display text-sm font-extrabold text-ink">LPA 12+</p>
-                <p className="font-mono text-[8px] uppercase tracking-wider text-ink-dim">Top Package</p>
-              </div>
-            </motion.div>
+          {/* Floating stat card — top left */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.7, duration: 0.5 }}
+            className="absolute -left-4 top-12 z-20 rounded-xl border border-teal/15 bg-white/90 backdrop-blur-sm shadow-lg px-4 py-3 hidden lg:block"
+          >
+            <p className="font-display text-lg font-bold text-teal">7,500+</p>
+            <p className="font-mono text-[9px] uppercase tracking-wider text-slate-400">Students Enrolled</p>
+          </motion.div>
 
-            {/* Float Layer 2: Placement Badge (Bottom-Left, offset) */}
-            <motion.div
-              style={{
-                x: mousePos.x * -1.2,
-                y: mousePos.y * -1.2,
-              }}
-              className="absolute -bottom-6 -left-6 rounded-2xl border border-teal/15 bg-white/95 p-4 shadow-xl backdrop-blur-md flex items-center gap-3 w-48"
-            >
-              <div className="h-9 w-9 rounded-xl bg-accent/10 flex items-center justify-center text-accent font-bold">💼</div>
-              <div>
-                <p className="font-display text-sm font-extrabold text-ink">45+ Partner</p>
-                <p className="font-mono text-[8px] uppercase tracking-wider text-ink-dim">Hiring Networks</p>
-              </div>
-            </motion.div>
-
-            {/* Float Layer 3: Extra badge */}
-            <motion.div
-              style={{
-                x: mousePos.x * 0.8,
-                y: mousePos.y * -0.8,
-              }}
-              className="absolute top-1/2 -left-12 rounded-xl border border-teal/10 bg-primary/95 px-3 py-1.5 shadow-md flex items-center gap-1.5"
-            >
-              <span className="h-1.5 w-1.5 rounded-full bg-white animate-ping" />
-              <span className="font-mono text-[8px] font-bold text-white uppercase tracking-wider">Live Sandbox</span>
-            </motion.div>
+          {/* Floating stat card — bottom right */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.85, duration: 0.5 }}
+            className="absolute -right-4 bottom-12 z-20 rounded-xl border border-teal/15 bg-white/90 backdrop-blur-sm shadow-lg px-4 py-3 hidden lg:block"
+          >
+            <p className="font-display text-lg font-bold text-teal">4.8 ★</p>
+            <p className="font-mono text-[9px] uppercase tracking-wider text-slate-400">Avg. Rating</p>
           </motion.div>
         </div>
-
       </div>
 
-      {/* Scroll indicator */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1 opacity-60">
-        <span className="font-mono text-[9px] uppercase tracking-widest text-ink-dim">Scroll</span>
+      {/* ── Scroll Indicator ──────────────────────────── */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1 opacity-50">
+        <span className="font-mono text-[8px] uppercase tracking-widest text-ink-dim">Scroll</span>
         <div className="h-6 w-3.5 rounded-full border border-ink-dim/40 flex justify-center p-1">
           <motion.div
-            animate={{
-              y: [0, 8, 0],
-            }}
-            transition={{
-              duration: 1.5,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
+            animate={{ y: [0, 8, 0] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
             className="h-1 w-1 rounded-full bg-primary-strong"
           />
         </div>

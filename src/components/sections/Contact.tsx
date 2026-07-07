@@ -14,7 +14,7 @@ const COURSES = [
   "AI & ML",
   "Cybersecurity",
   "Cloud Computing",
-  "Cloud Computing",
+  "UI/UX Design",
   "IoT",
   "Digital Marketing"
 ];

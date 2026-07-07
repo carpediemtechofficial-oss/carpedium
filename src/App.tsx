@@ -1,3 +1,5 @@
+import { useState, useEffect } from "react";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import SmoothScrollProvider from "@/components/providers/SmoothScrollProvider";
 import Nav from "@/components/layout/Nav";
 import Footer from "@/components/layout/Footer";
@@ -19,31 +21,172 @@ import BlogPreview from "@/components/sections/BlogPreview";
 import Resources from "@/components/sections/Resources";
 import Contact from "@/components/sections/Contact";
 
+import PreLoader from "@/components/ui/PreLoader";
+import ScrollProgress from "@/components/ui/ScrollProgress";
+import EnrollModal from "@/components/ui/EnrollModal";
+import SuccessPage from "@/components/ui/SuccessPage";
+import AdminDashboard from "@/components/ui/AdminDashboard";
+
+import SettingsEffects from "@/components/providers/SettingsEffects";
+
+import CoursesPage from "@/components/courses/CoursesPage";
+import CourseDetailContainer from "@/components/courses/CourseDetailContainer";
+
+import { type Course } from "@/data/courses";
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://script.google.com/macros/s/AKfycbzf4_Vj066n-X_5ZJ7B2D2V_M73r6yBNDq4-vQ/exec";
+
+type ViewState = "portal" | "admin" | "success" | "courses" | "course-detail";
+
+const queryClient = new QueryClient();
+
 export default function App() {
+  const [loading, setLoading] = useState(true);
+  const [view, setView] = useState<ViewState>("portal");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedCourseId, setSelectedCourseId] = useState("");
+  const [registrationData, setRegistrationData] = useState<any>(null);
+  const [activeSection, setActiveSection] = useState("hero");
+  const [currentCourseSlug, setCurrentCourseSlug] = useState<string>("");
+
+  // Track active section for navbar highlighting (Intersection Observer)
+  useEffect(() => {
+    if (view !== "portal") return;
+
+    const sections = document.querySelectorAll("section");
+    const observerOptions = {
+      root: null,
+      rootMargin: "-25% 0px -55% 0px",
+      threshold: 0,
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          setActiveSection(entry.target.id);
+        }
+      });
+    }, observerOptions);
+
+    sections.forEach((sec) => observer.observe(sec));
+    return () => observer.disconnect();
+  }, [view]);
+
+  // Disable page scroll when loading or modal open
+  useEffect(() => {
+    if (loading || isModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [loading, isModalOpen]);
+
+  const handleEnrollClick = (course?: Course) => {
+    if (course) {
+      setSelectedCourseId(course.id);
+    }
+    setIsModalOpen(true);
+  };
+
+  const handleEnrollSuccess = (data: any) => {
+    setIsModalOpen(false);
+    setRegistrationData(data);
+    setView("success");
+    window.scrollTo({ top: 0, behavior: "instant" });
+  };
+
+  const handleViewCourses = () => {
+    setView("courses");
+    window.scrollTo({ top: 0, behavior: "instant" });
+  };
+
+  const handleViewCourseDetail = (slug: string) => {
+    setCurrentCourseSlug(slug);
+    setView("course-detail");
+    window.scrollTo({ top: 0, behavior: "instant" });
+  };
+
+  const handleBackHome = () => {
+    setView("portal");
+    window.scrollTo({ top: 0, behavior: "instant" });
+  };
+
   return (
-    <div className="min-h-full flex flex-col bg-white text-slate-900">
-      <SmoothScrollProvider>
-        <Nav />
-        <main className="flex-1">
-          <Hero />
-          <TrustStrip />
-          <CourseGrid />
-          <WhyCarpediem />
-          <Programs />
-          <HowItWorks />
-          <LiveProjects />
-          <Certifications />
-          <Mentors />
-          <Outcomes />
-          <FAQs />
-          <BlogPreview />
-          <Resources />
-          <Contact />
-        </main>
-        <Footer />
-        <QuickEnquiry />
-        <WhatsAppButton />
-      </SmoothScrollProvider>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <SettingsEffects />
+      <div className="min-h-full flex flex-col bg-white text-slate-900">
+        <PreLoader onComplete={() => setLoading(false)} />
+
+        {view === "admin" ? (
+          <AdminDashboard onBackToPortal={() => setView("portal")} />
+        ) : (
+          <SmoothScrollProvider>
+            <ScrollProgress />
+            <Nav
+              activeSection={activeSection}
+              onEnrollClick={() => handleEnrollClick()}
+            />
+            <main className="flex-1">
+              {view === "success" && registrationData ? (
+                <SuccessPage
+                  regData={registrationData}
+                  onBackHome={handleBackHome}
+                />
+              ) : view === "courses" ? (
+                <CoursesPage
+                  onViewDetails={handleViewCourseDetail}
+                  onEnroll={handleEnrollClick}
+                  onBackHome={handleBackHome}
+                />
+              ) : view === "course-detail" ? (
+                <CourseDetailContainer
+                  slug={currentCourseSlug}
+                  onEnroll={handleEnrollClick}
+                  onBack={handleViewCourses}
+                  onBackHome={handleBackHome}
+                />
+              ) : (
+                <>
+                  <Hero />
+                  <TrustStrip />
+                  <CourseGrid
+                    onEnroll={handleEnrollClick}
+                    onViewAll={handleViewCourses}
+                    onViewDetails={handleViewCourseDetail}
+                  />
+                  <WhyCarpediem />
+                  <Programs />
+                  <HowItWorks />
+                  <LiveProjects />
+                  <Certifications />
+                  <Mentors />
+                  <Outcomes />
+                  <FAQs />
+                  <BlogPreview />
+                  <Resources />
+                  <Contact />
+                </>
+              )}
+            </main>
+            <Footer onAdminClick={() => setView("admin")} />
+            <QuickEnquiry />
+            <WhatsAppButton />
+
+            {isModalOpen && (
+              <EnrollModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                selectedCourseId={selectedCourseId}
+                onSuccess={handleEnrollSuccess}
+                backendUrl={BACKEND_URL}
+              />
+            )}
+          </SmoothScrollProvider>
+        )}
+      </div>
+    </QueryClientProvider>
   );
 }

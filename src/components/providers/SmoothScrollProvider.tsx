@@ -1,8 +1,6 @@
-"use client";
-
 import { useEffect } from "react";
 import { MotionConfig } from "framer-motion";
-import { initSmoothScroll } from "@/lib/scroll";
+import { initSmoothScroll, getLenis } from "@/lib/scroll";
 
 export default function SmoothScrollProvider({
   children,
@@ -17,7 +15,21 @@ export default function SmoothScrollProvider({
     if (prefersReducedMotion) return;
 
     const cleanup = initSmoothScroll();
-    return cleanup;
+
+    // Dynamically resize Lenis whenever document height changes
+    const lenis = getLenis();
+    let observer: ResizeObserver | null = null;
+    if (lenis) {
+      observer = new ResizeObserver(() => {
+        lenis.resize();
+      });
+      observer.observe(document.body);
+    }
+
+    return () => {
+      if (observer) observer.disconnect();
+      cleanup();
+    };
   }, []);
 
   return <MotionConfig reducedMotion="user">{children}</MotionConfig>;

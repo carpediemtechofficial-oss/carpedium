@@ -4,6 +4,8 @@ import { useState } from "react";
 import { scrollToSection } from "@/lib/scroll";
 import { useScrollUpOrTop } from "@/lib/useScrollDirection";
 import TopBar from "./TopBar";
+import { getMuteState, setMuteState, playTick } from "@/lib/sound";
+import { useSettings } from "@/hooks/useSettings";
 
 const LINKS = [
   { href: "#courses", label: "Courses" },
@@ -15,9 +17,25 @@ const LINKS = [
   { href: "#contact", label: "Contact" },
 ];
 
-export default function Nav() {
+type NavProps = {
+  activeSection: string;
+  onEnrollClick: () => void;
+};
+
+export default function Nav({ activeSection, onEnrollClick }: NavProps) {
   const [open, setOpen] = useState(false);
+  const [muted, setMuted] = useState(getMuteState());
   const topBarVisible = useScrollUpOrTop();
+  const { settings } = useSettings();
+
+  const toggleMute = () => {
+    const nextMute = !muted;
+    setMuted(nextMute);
+    setMuteState(nextMute);
+    if (!nextMute) {
+      setTimeout(() => playTick(), 50);
+    }
+  };
 
   const handleClick = (href: string) => (e: React.MouseEvent) => {
     e.preventDefault();
@@ -32,86 +50,107 @@ export default function Nav() {
         <a
           href="#hero"
           onClick={handleClick("#hero")}
+          onMouseEnter={playTick}
           className="flex items-center gap-2.5 font-display text-sm font-bold tracking-wider text-ink transition-transform hover:scale-[1.02]"
         >
           <img
-            src="/logo/carpediem-mark.jpg"
-            alt="Carpediem Tech Innovations"
+            src={settings.branding.logo}
+            alt={settings.branding.brandName}
             width={32}
             height={32}
             className="rounded-full ring-2 ring-primary/20"
           />
-          <span className="hidden sm:inline font-mono tracking-widest text-[13px] uppercase">CARPEDIEM TECH</span>
+          <span className="hidden sm:inline font-mono tracking-widest text-[13px] uppercase">{settings.branding.brandName}</span>
         </a>
 
         {/* Desktop Links */}
         <ul className="hidden items-center gap-7 md:flex">
-          {LINKS.map((link) => (
-            <li key={link.href}>
-              <a
-                href={link.href}
-                onClick={handleClick(link.href)}
-                className="relative py-1 font-mono text-xs uppercase tracking-wider text-ink-dim transition-colors duration-200 hover:text-primary after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-right after:scale-x-0 after:bg-primary after:transition-transform after:duration-350 hover:after:origin-left hover:after:scale-x-100"
-              >
-                {link.label}
-              </a>
-            </li>
-          ))}
+          {LINKS.map((link) => {
+            const isActive = activeSection === link.href.slice(1);
+            return (
+              <li key={link.href}>
+                <a
+                  href={link.href}
+                  onClick={handleClick(link.href)}
+                  onMouseEnter={playTick}
+                  className={`relative py-1 font-mono text-[11px] uppercase tracking-wider transition-colors duration-200 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-right after:scale-x-0 after:bg-primary after:transition-transform after:duration-300 hover:after:origin-left hover:after:scale-x-100 ${
+                    isActive ? "text-primary font-bold after:scale-x-100" : "text-ink-dim hover:text-primary"
+                  }`}
+                >
+                  {link.label}
+                </a>
+              </li>
+            );
+          })}
         </ul>
 
-        {/* CTA Button */}
+        {/* CTA */}
         <div className="hidden items-center gap-4 md:flex">
-          <a
-            href="#contact"
-            onClick={handleClick("#contact")}
-            className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-2 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-sm transition-all hover:bg-primary-light hover:shadow-md hover:-translate-y-0.5 active:translate-y-0"
+          <button
+            onClick={() => {
+              playTick();
+              onEnrollClick();
+            }}
+            className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-white shadow-sm transition-all hover:bg-primary-light hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
           >
-            Enquire Now
-          </a>
+            Enroll Now
+          </button>
         </div>
 
-        {/* Mobile Toggle */}
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          aria-controls="mobile-nav"
-          aria-label="Toggle navigation menu"
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-teal/20 text-ink transition-colors hover:bg-primary/5 hover:text-primary md:hidden"
-        >
-          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.8}>
-            {open ? (
-              <path d="M6 6l12 12M6 18L18 6" strokeLinecap="round" />
-            ) : (
-              <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
-            )}
-          </svg>
-        </button>
+        {/* Mobile hamburger only */}
+        <div className="flex items-center gap-2 md:hidden">
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            onMouseEnter={playTick}
+            aria-expanded={open}
+            aria-controls="mobile-nav"
+            aria-label="Toggle navigation menu"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-teal/20 text-ink transition-colors hover:bg-primary/5 hover:text-primary"
+          >
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.8}>
+              {open ? (
+                <path d="M6 6l12 12M6 18L18 6" strokeLinecap="round" />
+              ) : (
+                <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
+              )}
+            </svg>
+          </button>
+        </div>
       </nav>
 
       {/* Mobile Menu */}
       {open && (
         <div className="border-t border-teal/10 bg-white/95 px-6 py-6 shadow-xl md:hidden">
           <ul id="mobile-nav" className="flex flex-col gap-2">
-            {LINKS.map((link) => (
-              <li key={link.href}>
-                <a
-                  href={link.href}
-                  onClick={handleClick(link.href)}
-                  className="block py-2.5 font-mono text-sm uppercase tracking-wider text-ink-dim hover:text-primary transition-colors"
-                >
-                  {link.label}
-                </a>
-              </li>
-            ))}
-            <li className="mt-4 pt-4 border-t border-teal/5">
-              <a
-                href="#contact"
-                onClick={handleClick("#contact")}
-                className="flex w-full items-center justify-center rounded-full bg-primary py-3 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:bg-primary-light"
+            {LINKS.map((link) => {
+              const isActive = activeSection === link.href.slice(1);
+              return (
+                <li key={link.href}>
+                  <a
+                    href={link.href}
+                    onClick={handleClick(link.href)}
+                    onMouseEnter={playTick}
+                    className={`block py-2.5 font-mono text-xs uppercase tracking-wider transition-colors ${
+                      isActive ? "text-primary font-bold" : "text-ink-dim hover:text-primary"
+                    }`}
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              );
+            })}
+            <li className="mt-2 pt-2">
+              <button
+                onClick={() => {
+                  playTick();
+                  setOpen(false);
+                  onEnrollClick();
+                }}
+                className="flex w-full items-center justify-center rounded-full bg-primary py-3 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:bg-primary-light cursor-pointer"
               >
-                Enquire Now
-              </a>
+                Enroll Now
+              </button>
             </li>
           </ul>
         </div>

@@ -1,5 +1,6 @@
 import Reveal from "@/components/ui/Reveal";
 import SectionEyebrow from "@/components/ui/SectionEyebrow";
+import TiltCard from "@/components/ui/TiltCard";
 
 const VALUES = [
   {
@@ -69,31 +70,33 @@ export default function WhyCarpediem() {
         <div className="mt-16 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {VALUES.map((value, i) => (
             <Reveal key={value.label} delay={i * 0.08}>
-              <div className="h-full rounded-2xl border border-teal/10 bg-white p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-5">
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="h-7 w-7 text-primary"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={1.8}
-                      aria-hidden="true"
-                    >
-                      {value.icon}
-                    </svg>
-                    <span className="font-display text-2xl font-black text-primary-strong/15 select-none">
-                      {value.metric}
-                    </span>
+              <TiltCard cursorLabel="LEARN" className="h-full bg-white">
+                <div className="h-full p-6 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-5">
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="h-7 w-7 text-primary"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={1.8}
+                        aria-hidden="true"
+                      >
+                        {value.icon}
+                      </svg>
+                      <span className="font-display text-2xl font-black text-primary-strong/15 select-none">
+                        {value.metric}
+                      </span>
+                    </div>
+                    <h3 className="font-display text-base font-bold text-ink leading-snug">
+                      {value.label}
+                    </h3>
+                    <p className="mt-2 text-xs sm:text-sm text-ink-dim leading-relaxed">
+                      {value.description}
+                    </p>
                   </div>
-                  <h3 className="font-display text-base font-bold text-ink leading-snug">
-                    {value.label}
-                  </h3>
-                  <p className="mt-2 text-xs sm:text-sm text-ink-dim leading-relaxed">
-                    {value.description}
-                  </p>
                 </div>
-              </div>
+              </TiltCard>
             </Reveal>
           ))}
         </div>
