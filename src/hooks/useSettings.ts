@@ -43,6 +43,10 @@ export type SiteSettings = {
     eyebrow: string;
     title: string;
     subtitle: string;
+    video?: string;
+  };
+  certifications?: {
+    mockup: string;
   };
   stats: {
     courses: string;
@@ -92,6 +96,10 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     title: "Build What's Next. The Skills Behind Tomorrow's Technology.",
     subtitle:
       "Master Full-Stack Development, Artificial Intelligence, Cloud Computing, and Cybersecurity through project-based learning, expert mentorship, internships, and industry-recognized certifications.",
+    video: "/hero-bg.mp4",
+  },
+  certifications: {
+    mockup: "/images/certificate.png",
   },
   stats: {
     courses: "12+",

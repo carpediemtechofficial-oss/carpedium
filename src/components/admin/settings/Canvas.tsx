@@ -4,10 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { useEditorStore, overridesToCss } from "@/editor/editorStore";
 import { FONT_CATEGORIES } from "@/editor/fonts";
 import { useSettings, DEFAULT_SETTINGS } from "@/hooks/useSettings";
-import { 
-  Laptop, Smartphone, Tablet, Monitor, Undo, Redo, Save, 
+import { supabase } from "@/lib/supabase";
+import {
+  Laptop, Smartphone, Tablet, Monitor, Undo, Redo, Save,
   Sparkles, AlignLeft, AlignCenter, AlignRight, AlignJustify,
-  Eye, EyeOff, ArrowUp, ArrowDown
+  Eye, EyeOff, ArrowUp, ArrowDown, UploadCloud, Loader2
 } from "lucide-react";
 
 const GRADIENT_PRESETS = [
@@ -33,6 +34,7 @@ export default function Canvas() {
   const {
     overrides,
     drafts,
+    contentEdits,
     device,
     customWidth,
     selectedId,
@@ -41,6 +43,7 @@ export default function Canvas() {
     setOverride,
     resetOverride,
     setContentDraft,
+    setContentEdit,
     undo,
     redo,
     publish,
@@ -51,6 +54,7 @@ export default function Canvas() {
   const [selectedElement, setSelectedElement] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<"content" | "type" | "layout" | "style" | "effects">("content");
   const [isPublishing, setIsPublishing] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const { settings } = useSettings();
   const sectionsList = drafts.layout?.sections || settings.layout?.sections || DEFAULT_SETTINGS.layout?.sections || [];
@@ -104,6 +108,24 @@ export default function Canvas() {
     );
   }, [overrides, drafts]);
 
+  // Keep the canvas in sync with all unpublished content edits
+  // (text, images, videos) — including undo / redo / reset.
+  useEffect(() => {
+    iframeRef.current?.contentWindow?.postMessage(
+      { type: "PREVIEW_CONTENT", edits: contentEdits, pathDrafts: drafts },
+      "*"
+    );
+  }, [contentEdits, drafts]);
+
+  // Live-apply a single edit to the canvas instantly while typing.
+  const applyLive = (id: string | null, kind: string, value: string) => {
+    if (!id || !iframeRef.current?.contentWindow) return;
+    iframeRef.current.contentWindow.postMessage(
+      { type: "EDITOR_CONTENT_APPLY", id, kind, value },
+      "*"
+    );
+  };
+
   useEffect(() => {
     const handleMessage = (e: MessageEvent) => {
       const payload = e.data;
@@ -119,6 +141,10 @@ export default function Canvas() {
               overrides: overrides,
               content: drafts,
             },
+            "*"
+          );
+          iframeRef.current.contentWindow.postMessage(
+            { type: "PREVIEW_CONTENT", edits: contentEdits, pathDrafts: drafts },
             "*"
           );
         }
@@ -145,13 +171,20 @@ export default function Canvas() {
       }
 
       if (payload.type === "EDITOR_CONTENT") {
-        setContentDraft(payload.path, payload.value);
+        if (payload.path) {
+          setContentDraft(payload.path, payload.value);
+        } else if (payload.id) {
+          setContentEdit(payload.id, payload.kind || "text", payload.value);
+        }
+        setSelectedElement((prev: any) =>
+          prev && prev.id === payload.id ? { ...prev, content: payload.value } : prev
+        );
       }
     };
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [overrides, drafts]);
+  }, [overrides, drafts, contentEdits]);
 
   const handleStyleChange = (prop: string, val: string) => {
     if (selectedId) {
@@ -177,17 +210,49 @@ export default function Canvas() {
     }
   };
 
+  // Text edits — works for EVERY element: settings-backed ones save to
+  // their settings path, everything else saves as a direct content edit.
   const handleContentChange = (val: string) => {
-    if (selectedElement?.path) {
+    if (!selectedElement) return;
+    if (selectedElement.path) {
       setContentDraft(selectedElement.path, val);
-      setSelectedElement((prev: any) => ({ ...prev, content: val }));
-      
-      if (iframeRef.current?.contentWindow) {
-        iframeRef.current.contentWindow.postMessage(
-          { type: "EDITOR_SELECT", id: selectedId },
-          "*"
-        );
-      }
+    } else if (selectedId) {
+      setContentEdit(selectedId, selectedElement.kind || "text", val);
+    }
+    setSelectedElement((prev: any) => ({ ...prev, content: val }));
+    applyLive(selectedId, "text", val);
+  };
+
+  // Image / video source edits (URL or upload)
+  const handleMediaChange = (val: string) => {
+    if (!selectedElement) return;
+    const kind = selectedElement.kind === "video" ? "video" : "image";
+    if (selectedElement.path) {
+      setContentDraft(selectedElement.path, val);
+    } else if (selectedId) {
+      setContentEdit(selectedId, kind, val);
+    }
+    setSelectedElement((prev: any) => ({ ...prev, src: val, content: val }));
+    applyLive(selectedId, kind, val);
+  };
+
+  // Uploads to the public `media` storage bucket (same one the Media
+  // Library / admin image fields use) and applies the public URL.
+  const handleMediaUpload = async (file: File) => {
+    setUploading(true);
+    try {
+      const name = `canvas/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
+      const { error: upErr } = await supabase.storage.from("media").upload(name, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+      if (upErr) throw upErr;
+      const { data } = supabase.storage.from("media").getPublicUrl(name);
+      if (data?.publicUrl) handleMediaChange(data.publicUrl);
+    } catch (e: any) {
+      alert(`Upload failed: ${e.message || e}`);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -356,54 +421,107 @@ export default function Canvas() {
               {/* Content Panel */}
               {activeTab === "content" && (
                 <div className="space-y-4">
-                  {selectedElement.path ? (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs text-slate-400 font-medium">Text Content</label>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const isHidden = overrides[selectedId || ""]?.["display"] === "none";
-                            handleStyleChange("display", isHidden ? "" : "none");
-                          }}
-                          className={`p-1 rounded transition-colors ${overrides[selectedId || ""]?.["display"] === "none" ? "text-red-400 hover:text-red-300 bg-red-950/20" : "text-slate-400 hover:text-white"}`}
-                          title={overrides[selectedId || ""]?.["display"] === "none" ? "Show Element" : "Hide Element"}
-                        >
-                          {overrides[selectedId || ""]?.["display"] === "none" ? (
-                            <EyeOff className="h-4 w-4" />
+                  {/* Visibility toggle — available for every element */}
+                  <div className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-lg p-2.5">
+                    <span className="text-xs text-slate-400 font-medium font-mono">Visibility</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const isHidden = overrides[selectedId || ""]?.["display"] === "none";
+                        handleStyleChange("display", isHidden ? "" : "none");
+                      }}
+                      className={`p-1 rounded transition-colors ${overrides[selectedId || ""]?.["display"] === "none" ? "text-red-400 hover:text-red-300 bg-red-950/20" : "text-slate-400 hover:text-white"}`}
+                      title={overrides[selectedId || ""]?.["display"] === "none" ? "Show Element" : "Hide Element"}
+                    >
+                      {overrides[selectedId || ""]?.["display"] === "none" ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+
+                  {(selectedElement.kind === "image" || selectedElement.kind === "video" || selectedElement.kind === "logo") ? (
+                    /* ── Image / Video / Logo editor ── */
+                    <div className="space-y-3">
+                      <label className="text-xs text-slate-400 font-medium">
+                        {selectedElement.kind === "video" ? "Video Source" : "Image Source"}
+                      </label>
+
+                      {/* Live preview */}
+                      <div className="rounded-lg border border-slate-800 bg-slate-900 overflow-hidden">
+                        {selectedElement.kind === "video" ? (
+                          (selectedElement.src || selectedElement.content) ? (
+                            <video
+                              key={selectedElement.src || selectedElement.content}
+                              src={selectedElement.src || selectedElement.content}
+                              muted
+                              loop
+                              autoPlay
+                              playsInline
+                              className="w-full h-28 object-cover"
+                            />
                           ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
+                            <div className="h-28 flex items-center justify-center text-[11px] text-slate-500">No video source</div>
+                          )
+                        ) : (selectedElement.src || selectedElement.content) ? (
+                          <img
+                            src={selectedElement.src || selectedElement.content}
+                            alt="preview"
+                            className="w-full h-28 object-contain bg-slate-950"
+                          />
+                        ) : (
+                          <div className="h-28 flex items-center justify-center text-[11px] text-slate-500">No image source</div>
+                        )}
                       </div>
+
+                      {/* URL input */}
+                      <input
+                        type="text"
+                        value={selectedElement.src || selectedElement.content || ""}
+                        onChange={(e) => handleMediaChange(e.target.value)}
+                        placeholder={selectedElement.kind === "video" ? "Video URL (.mp4)" : "Image URL"}
+                        className="w-full rounded bg-slate-900 border border-slate-800 text-slate-100 p-2.5 text-xs focus:border-teal-500 focus:outline-none"
+                      />
+
+                      {/* Upload */}
+                      <label className={`flex items-center justify-center gap-2 rounded-lg border border-dashed border-slate-700 bg-slate-900 hover:bg-slate-800 hover:border-teal-500 text-slate-300 px-3 py-2.5 text-xs font-medium cursor-pointer transition-colors ${uploading ? "opacity-60 pointer-events-none" : ""}`}>
+                        {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
+                        {uploading
+                          ? "Uploading..."
+                          : selectedElement.kind === "video" ? "Upload new video" : "Upload new image"}
+                        <input
+                          type="file"
+                          accept={selectedElement.kind === "video" ? "video/*" : "image/*"}
+                          className="hidden"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) handleMediaUpload(f);
+                            e.target.value = "";
+                          }}
+                        />
+                      </label>
+
+                      {selectedElement.path === "branding.logo" && (
+                        <p className="text-[11px] text-slate-500 italic leading-relaxed">
+                          This is your site logo — changing it updates the navbar, footer and favicon everywhere.
+                        </p>
+                      )}
+                      <p className="text-[10px] text-slate-600 leading-relaxed">
+                        Changes preview instantly. Click <b>Publish</b> to make them live on the site.
+                      </p>
+                    </div>
+                  ) : (
+                    /* ── Text editor — works for every text element ── */
+                    <div className="space-y-2">
+                      <label className="text-xs text-slate-400 font-medium">Text Content</label>
                       <textarea
                         value={selectedElement.content || ""}
                         onChange={(e) => handleContentChange(e.target.value)}
                         className="w-full h-32 rounded bg-slate-900 border border-slate-800 text-slate-100 p-2.5 text-xs focus:border-teal-500 focus:outline-none"
                       />
-                    </div>
-                  ) : (
-                    <div className="space-y-3 bg-slate-900 border border-slate-800 rounded-lg p-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-slate-400 font-medium font-mono">Visibility Toggle</span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const isHidden = overrides[selectedId || ""]?.["display"] === "none";
-                            handleStyleChange("display", isHidden ? "" : "none");
-                          }}
-                          className={`p-1.5 rounded transition-colors ${overrides[selectedId || ""]?.["display"] === "none" ? "text-red-400 hover:text-red-300 bg-red-900/10" : "text-slate-400 hover:text-white bg-slate-850"}`}
-                          title={overrides[selectedId || ""]?.["display"] === "none" ? "Show Element" : "Hide Element"}
-                        >
-                          {overrides[selectedId || ""]?.["display"] === "none" ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
-                      <p className="text-[11px] text-slate-500 italic leading-relaxed">
-                        No editable text path defined. Double click on canvas to type, or use the eye icon above to toggle visibility.
+                      <p className="text-[10px] text-slate-600 leading-relaxed">
+                        Tip: you can also double-click any text directly on the canvas to type inline.
                       </p>
                     </div>
                   )}

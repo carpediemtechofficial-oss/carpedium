@@ -39,6 +39,7 @@ import TestimonialsSection from "@/components/sections/TestimonialsSection";
 import PartnerLogos from "@/components/sections/PartnerLogos";
 
 import StyleOverrides from "@/editor/StyleOverrides";
+import ContentOverrides from "@/editor/ContentOverrides";
 import CanvasRuntime from "@/editor/CanvasRuntime";
 
 import { type Course } from "@/data/courses";
@@ -157,6 +158,7 @@ export default function App() {
     <>
       <SettingsEffects />
       <StyleOverrides />
+      <ContentOverrides />
       <CanvasRuntime />
       <div className="min-h-full flex flex-col bg-white text-slate-900">
         <PreLoader onComplete={() => setLoading(false)} />

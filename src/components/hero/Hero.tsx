@@ -128,14 +128,17 @@ export default function Hero() {
               <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 to-slate-500/5 z-0" />
               {/* Hero video preview */}
               <video
+                data-edit-id="hero-video"
+                data-edit-name="Hero Video"
+                data-edit-kind="video"
+                data-edit-path="hero.video"
+                src={settings.hero.video || "/hero-bg.mp4"}
                 autoPlay
                 muted
                 loop
                 playsInline
-                className="w-full h-full object-cover rounded-xl z-10 relative"
-              >
-                <source src="/hero-bg.mp4" type="video/mp4" />
-              </video>
+                className="w-full h-full object-cover rounded-xl z-10 relative cursor-pointer"
+              />
 
               {/* Floating badges like Innov8 */}
               

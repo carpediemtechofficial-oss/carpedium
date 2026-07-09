@@ -104,6 +104,10 @@ export default function Footer({ onAdminClick }: FooterProps) {
           <div className="col-span-2 sm:col-span-1 space-y-4">
             <div className="flex items-center gap-3">
               <img
+                data-edit-id="footer-logo"
+                data-edit-name="Site Logo (Footer)"
+                data-edit-kind="image"
+                data-edit-path="branding.logo"
                 src={branding.logo}
                 alt={branding.brandName}
                 width={34}

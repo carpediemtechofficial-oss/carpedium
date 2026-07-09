@@ -53,6 +53,10 @@ export default function Nav({ activeSection, onEnrollClick }: NavProps) {
           className="flex items-center gap-2.5 font-display text-sm font-bold tracking-wider text-ink transition-transform hover:scale-[1.02] shrink-0"
         >
           <img
+            data-edit-id="nav-logo"
+            data-edit-name="Site Logo"
+            data-edit-kind="image"
+            data-edit-path="branding.logo"
             src={settings.branding.logo}
             alt={settings.branding.brandName}
             width={32}

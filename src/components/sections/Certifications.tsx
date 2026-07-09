@@ -1,7 +1,9 @@
 import Reveal from "@/components/ui/Reveal";
 import SectionEyebrow from "@/components/ui/SectionEyebrow";
+import { useSettings } from "@/hooks/useSettings";
 
 export default function Certifications() {
+  const { settings } = useSettings();
   return (
     <section id="certifications" className="relative px-6 py-24 sm:py-32 bg-white">
       <div className="mx-auto max-w-6xl">
@@ -55,9 +57,13 @@ export default function Certifications() {
             <Reveal delay={0.15}>
               <div className="relative w-full max-w-[460px] group cursor-pointer overflow-hidden rounded-2xl border border-teal/15 shadow-xl transition-all duration-300 hover:scale-[1.01] hover:shadow-2xl">
                 <img
-                  src="/images/certificate.png"
+                  data-edit-id="certifications-mockup"
+                  data-edit-name="Certifications Mockup"
+                  data-edit-kind="image"
+                  data-edit-path="certifications.mockup"
+                  src={settings.certifications?.mockup || "/images/certificate.png"}
                   alt="Carpediem Certificate of Completion - Software Development Internship"
-                  className="w-full h-auto object-contain select-none"
+                  className="w-full h-auto object-contain select-none cursor-pointer"
                   loading="lazy"
                 />
               </div>

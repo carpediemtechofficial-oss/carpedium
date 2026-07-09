@@ -44,7 +44,7 @@ export default function AdminLayout({ session, onLogout, onBackToPortal }: Admin
   const { settings } = useSettings();
 
   return (
-    <div className="flex h-screen bg-slate-50 font-body overflow-hidden">
+    <div data-edit-ignore="" className="flex h-screen bg-slate-50 font-body overflow-hidden">
       
       {/* Sidebar */}
       <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col flex-shrink-0">

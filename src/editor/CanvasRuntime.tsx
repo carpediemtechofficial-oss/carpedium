@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { ensureFontsFromCss, loadFontFamily } from "./fonts";
+import { initAutoTag } from "./autoTag";
+import { applyContentEdit, type ContentEditMap } from "./ContentOverrides";
 
 const loadFont = (fontName: string, elementId: string, cssVarName1: string, cssVarName2: string, fallbackStack: string) => {
   if (!fontName) return;
@@ -31,8 +33,33 @@ export default function CanvasRuntime() {
 
     setIsPreview(true);
 
+    // Auto-tag EVERY text / image / video element so the whole page
+    // is selectable and editable — not just hand-tagged elements.
+    const cleanupAutoTag = initAutoTag();
+
     let hoverElement: HTMLElement | null = null;
     let selectedElement: HTMLElement | null = null;
+
+    // Remember an element's original content so Undo / Reset can restore it.
+    const saveOriginal = (el: HTMLElement) => {
+      if (el.dataset.editOriginal !== undefined) return;
+      const kind = el.getAttribute("data-edit-kind") || "text";
+      if (kind === "image") {
+        el.dataset.editOriginal = el.getAttribute("src") || "";
+      } else if (kind === "video") {
+        el.dataset.editOriginal = el.getAttribute("src") || el.querySelector("source")?.getAttribute("src") || "";
+      } else {
+        el.dataset.editOriginal = el.innerText;
+      }
+    };
+
+    const restoreOriginal = (el: HTMLElement) => {
+      const orig = el.dataset.editOriginal;
+      if (orig === undefined) return;
+      const kind = el.getAttribute("data-edit-kind") || "text";
+      applyContentEdit(el, { kind, value: orig });
+      delete el.dataset.editDirty;
+    };
 
     // Create selection overlays layer
     const overlayContainer = document.createElement("div");
@@ -151,7 +178,25 @@ export default function CanvasRuntime() {
 
       const path = el.getAttribute("data-edit-path") || "";
       const textVal = el.innerText || "";
-      const imgSrc = el.tagName === "IMG" ? (el as HTMLImageElement).src : "";
+      let mediaSrc = "";
+      
+      let mediaEl = el;
+      if (el.tagName !== "IMG" && el.tagName !== "VIDEO") {
+        const childImg = el.querySelector("img");
+        const childVideo = el.querySelector("video");
+        if (childImg) {
+          mediaEl = childImg;
+        } else if (childVideo) {
+          mediaEl = childVideo;
+        }
+      }
+
+      if (mediaEl.tagName === "IMG") {
+        mediaSrc = (mediaEl as HTMLImageElement).getAttribute("src") || (mediaEl as HTMLImageElement).src || "";
+      } else if (mediaEl.tagName === "VIDEO") {
+        const video = mediaEl as HTMLVideoElement;
+        mediaSrc = video.getAttribute("src") || video.querySelector("source")?.getAttribute("src") || video.currentSrc || "";
+      }
 
       // For backward compatibility
       window.parent.postMessage(
@@ -162,7 +207,8 @@ export default function CanvasRuntime() {
           kind: el.getAttribute("data-edit-kind"),
           path,
           styles: props,
-          content: path ? (imgSrc || textVal) : ""
+          src: mediaSrc,
+          content: mediaSrc || textVal
         },
         "*"
       );
@@ -197,9 +243,35 @@ export default function CanvasRuntime() {
         const name = target.getAttribute("data-edit-name");
         const kind = target.getAttribute("data-edit-kind");
 
+        let mediaSrc = "";
+        let mediaEl = target;
+        if (target.tagName !== "IMG" && target.tagName !== "VIDEO") {
+          const childImg = target.querySelector("img");
+          const childVideo = target.querySelector("video");
+          if (childImg) {
+            mediaEl = childImg;
+          } else if (childVideo) {
+            mediaEl = childVideo;
+          }
+        }
+        if (mediaEl.tagName === "IMG") {
+          mediaSrc = (mediaEl as HTMLImageElement).getAttribute("src") || (mediaEl as HTMLImageElement).src || "";
+        } else if (mediaEl.tagName === "VIDEO") {
+          const video = mediaEl as HTMLVideoElement;
+          mediaSrc = video.getAttribute("src") || video.querySelector("source")?.getAttribute("src") || video.currentSrc || "";
+        }
+        const textVal = target.innerText || "";
+
         window.parent.postMessage({
           type: 'CANVAS_ELEMENT_SELECTED',
-          element: { id, path, name, kind }
+          element: { 
+            id, 
+            path, 
+            name, 
+            kind,
+            content: mediaSrc || textVal,
+            src: mediaSrc
+          }
         }, '*');
       } else {
         selectedElement = null;
@@ -214,6 +286,7 @@ export default function CanvasRuntime() {
         const kind = target.getAttribute("data-edit-kind");
         if (kind === "text" || kind === "heading" || kind === "button" || kind === "link") {
           e.preventDefault();
+          saveOriginal(target);
           target.contentEditable = "plaintext-only";
           target.focus();
           
@@ -230,16 +303,18 @@ export default function CanvasRuntime() {
           const commitText = () => {
             target.contentEditable = "false";
             const path = target.getAttribute("data-edit-path") || "";
-            if (path) {
-              window.parent.postMessage(
-                {
-                  type: "EDITOR_CONTENT",
-                  path,
-                  value: target.innerText
-                },
-                "*"
-              );
-            }
+            // Mark as locally edited so published overrides don't clobber it
+            target.dataset.editDirty = "1";
+            window.parent.postMessage(
+              {
+                type: "EDITOR_CONTENT",
+                path,
+                id: target.getAttribute("data-edit-id"),
+                kind: target.getAttribute("data-edit-kind") || "text",
+                value: target.innerText
+              },
+              "*"
+            );
             target.removeEventListener("blur", commitText);
             target.removeEventListener("keydown", handleKey);
           };
@@ -319,6 +394,47 @@ export default function CanvasRuntime() {
         ensureFontsFromCss(payload.css || "");
       }
 
+      // Live-apply a single content edit (text / image src / video src)
+      // coming from the Studio inspector — instant real-time preview.
+      if (payload.type === "EDITOR_CONTENT_APPLY" && payload.id) {
+        const node = document.querySelector(`[data-edit-id="${CSS.escape(payload.id)}"]`) as HTMLElement | null;
+        if (node) {
+          saveOriginal(node);
+          node.dataset.editDirty = "1";
+          applyContentEdit(node, { kind: payload.kind || "text", value: payload.value ?? "" });
+        }
+      }
+
+      // Bulk sync of all unpublished content edits (sent on load / undo / redo)
+      if (payload.type === "PREVIEW_CONTENT" && payload.edits && typeof payload.edits === "object") {
+        // First restore everything locally edited, then re-apply the
+        // current edit set — this makes Undo / Redo / Reset accurate.
+        document.querySelectorAll<HTMLElement>('[data-edit-dirty="1"]').forEach((el) => restoreOriginal(el));
+        Object.entries(payload.edits as ContentEditMap).forEach(([id, edit]) => {
+          const node = document.querySelector(`[data-edit-id="${CSS.escape(id)}"]`) as HTMLElement | null;
+          if (node) {
+            saveOriginal(node);
+            node.dataset.editDirty = "1";
+            applyContentEdit(node, edit);
+          }
+        });
+        // Settings-backed drafts (hero.title, branding.logo, …) applied by path
+        if (payload.pathDrafts && typeof payload.pathDrafts === "object") {
+          Object.entries(payload.pathDrafts as Record<string, Record<string, any>>).forEach(([section, fields]) => {
+            Object.entries(fields || {}).forEach(([field, value]) => {
+              if (typeof value !== "string") return;
+              document.querySelectorAll(`[data-edit-path="${CSS.escape(`${section}.${field}`)}"]`).forEach((n) => {
+                const el = n as HTMLElement;
+                saveOriginal(el);
+                el.dataset.editDirty = "1";
+                const kind = el.getAttribute("data-edit-kind") || "text";
+                applyContentEdit(el, { kind: kind === "heading" || kind === "button" || kind === "link" ? "text" : kind, value });
+              });
+            });
+          });
+        }
+      }
+
       if (payload.type === "EDITOR_SELECT") {
         const node = document.querySelector(`[data-edit-id="${payload.id}"]`) as HTMLElement;
         if (node) {
@@ -348,6 +464,7 @@ export default function CanvasRuntime() {
 
     return () => {
       cancelAnimationFrame(rafId);
+      cleanupAutoTag();
       document.removeEventListener("mouseover", handleMouseOver);
       document.removeEventListener("mouseout", handleMouseOut);
       document.removeEventListener("click", handleMouseClick, true);
