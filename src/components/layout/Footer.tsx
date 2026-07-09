@@ -110,11 +110,23 @@ export default function Footer({ onAdminClick }: FooterProps) {
                 height={34}
                 className="rounded-full border border-slate-800 select-none bg-white"
               />
-              <p className="font-display text-sm font-bold text-white tracking-wide">
+              <p 
+                data-edit-id="footer-brand-name"
+                data-edit-name="Footer Brand Name"
+                data-edit-kind="text"
+                data-edit-path="branding.brandName"
+                className="font-display text-sm font-bold text-white tracking-wide"
+              >
                 {branding.brandName}
               </p>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed max-w-[200px]">
+            <p 
+              data-edit-id="footer-tagline"
+              data-edit-name="Footer Tagline"
+              data-edit-kind="text"
+              data-edit-path="footer.tagline"
+              className="text-xs text-slate-400 leading-relaxed max-w-[200px]"
+            >
               {footer.tagline || "Providing hands-on technology training, certification, and corporate digital solutions."}
             </p>
           </div>
@@ -159,7 +171,12 @@ export default function Footer({ onAdminClick }: FooterProps) {
                 Admin Portal
               </button>
             )}
-            <span>
+            <span
+              data-edit-id="footer-copyright"
+              data-edit-name="Footer Copyright"
+              data-edit-kind="text"
+              data-edit-path="footer.copyright"
+            >
               © {new Date().getFullYear()} {footer.copyright}
             </span>
           </div>

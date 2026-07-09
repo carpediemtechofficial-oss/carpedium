@@ -59,7 +59,15 @@ export default function Nav({ activeSection, onEnrollClick }: NavProps) {
             height={32}
             className="rounded-full ring-2 ring-primary/20 shrink-0"
           />
-          <span className="hidden sm:inline font-mono tracking-widest text-[11px] md:text-[13px] uppercase whitespace-nowrap">{settings.branding.brandName}</span>
+          <span 
+            data-edit-id="nav-brand-name"
+            data-edit-name="Brand Name"
+            data-edit-kind="text"
+            data-edit-path="branding.brandName"
+            className="hidden sm:inline font-mono tracking-widest text-[11px] md:text-[13px] uppercase whitespace-nowrap"
+          >
+            {settings.branding.brandName}
+          </span>
         </a>
 
         {/* Desktop Links */}
@@ -90,9 +98,13 @@ export default function Nav({ activeSection, onEnrollClick }: NavProps) {
               playTick();
               onEnrollClick();
             }}
+            data-edit-id="nav-enroll-btn"
+            data-edit-name="Nav Enroll Button"
+            data-edit-kind="button"
+            data-edit-path="branding.enrollCta"
             className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-white shadow-sm transition-all hover:bg-primary-light hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 cursor-pointer whitespace-nowrap shrink-0"
           >
-            Enroll Now
+            {settings.branding.enrollCta || "Enroll Now"}
           </button>
         </div>
 

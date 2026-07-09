@@ -3,9 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useEditorStore, overridesToCss } from "@/editor/editorStore";
 import { FONT_CATEGORIES } from "@/editor/fonts";
+import { useSettings, DEFAULT_SETTINGS } from "@/hooks/useSettings";
 import { 
   Laptop, Smartphone, Tablet, Monitor, Undo, Redo, Save, 
-  Sparkles, AlignLeft, AlignCenter, AlignRight, AlignJustify 
+  Sparkles, AlignLeft, AlignCenter, AlignRight, AlignJustify,
+  Eye, EyeOff, ArrowUp, ArrowDown
 } from "lucide-react";
 
 const GRADIENT_PRESETS = [
@@ -49,6 +51,29 @@ export default function Canvas() {
   const [selectedElement, setSelectedElement] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<"content" | "type" | "layout" | "style" | "effects">("content");
   const [isPublishing, setIsPublishing] = useState(false);
+
+  const { settings } = useSettings();
+  const sectionsList = drafts.layout?.sections || settings.layout?.sections || DEFAULT_SETTINGS.layout?.sections || [];
+
+  const moveSection = (index: number, direction: "up" | "down") => {
+    const newSections = [...sectionsList];
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex >= 0 && targetIndex < newSections.length) {
+      const temp = newSections[index];
+      newSections[index] = newSections[targetIndex];
+      newSections[targetIndex] = temp;
+      setContentDraft("layout.sections", newSections);
+    }
+  };
+
+  const toggleSectionVisibility = (index: number) => {
+    const newSections = [...sectionsList];
+    newSections[index] = {
+      ...newSections[index],
+      visible: newSections[index].visible === false ? true : false
+    };
+    setContentDraft("layout.sections", newSections);
+  };
 
   const syncStylesToIframe = () => {
     const css = overridesToCss(overrides);
@@ -333,7 +358,24 @@ export default function Canvas() {
                 <div className="space-y-4">
                   {selectedElement.path ? (
                     <div className="space-y-2">
-                      <label className="text-xs text-slate-400 font-medium">Text Content</label>
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs text-slate-400 font-medium">Text Content</label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const isHidden = overrides[selectedId || ""]?.["display"] === "none";
+                            handleStyleChange("display", isHidden ? "" : "none");
+                          }}
+                          className={`p-1 rounded transition-colors ${overrides[selectedId || ""]?.["display"] === "none" ? "text-red-400 hover:text-red-300 bg-red-950/20" : "text-slate-400 hover:text-white"}`}
+                          title={overrides[selectedId || ""]?.["display"] === "none" ? "Show Element" : "Hide Element"}
+                        >
+                          {overrides[selectedId || ""]?.["display"] === "none" ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
                       <textarea
                         value={selectedElement.content || ""}
                         onChange={(e) => handleContentChange(e.target.value)}
@@ -341,7 +383,29 @@ export default function Canvas() {
                       />
                     </div>
                   ) : (
-                    <p className="text-xs text-slate-500 italic">No editable text path defined. Double click on canvas to type.</p>
+                    <div className="space-y-3 bg-slate-900 border border-slate-800 rounded-lg p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-slate-400 font-medium font-mono">Visibility Toggle</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const isHidden = overrides[selectedId || ""]?.["display"] === "none";
+                            handleStyleChange("display", isHidden ? "" : "none");
+                          }}
+                          className={`p-1.5 rounded transition-colors ${overrides[selectedId || ""]?.["display"] === "none" ? "text-red-400 hover:text-red-300 bg-red-900/10" : "text-slate-400 hover:text-white bg-slate-850"}`}
+                          title={overrides[selectedId || ""]?.["display"] === "none" ? "Show Element" : "Hide Element"}
+                        >
+                          {overrides[selectedId || ""]?.["display"] === "none" ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                      <p className="text-[11px] text-slate-500 italic leading-relaxed">
+                        No editable text path defined. Double click on canvas to type, or use the eye icon above to toggle visibility.
+                      </p>
+                    </div>
                   )}
                 </div>
               )}
@@ -658,9 +722,71 @@ export default function Canvas() {
             </div>
           </div>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-center p-6 text-slate-500 space-y-3 select-none">
-            <Sparkles className="h-8 w-8 text-slate-700 animate-pulse" />
-            <p className="text-xs font-mono">Select any element in the live preview canvas to begin customize styling.</p>
+          <div className="flex flex-col h-full overflow-hidden">
+            {/* Sidebar Header */}
+            <div className="p-4 border-b border-slate-800 shrink-0">
+              <span className="text-[10px] font-mono text-teal-500 font-bold uppercase">PAGE STRUCTURE</span>
+              <h3 className="font-bold text-sm text-slate-100 mt-0.5">Section Layouts</h3>
+              <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                Reorder, hide, or show standard sections on the homepage.
+              </p>
+            </div>
+
+            {/* Layout List */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3.5 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
+              {sectionsList.map((sect: any, index: number) => {
+                const isVisible = sect.visible !== false;
+                return (
+                  <div 
+                    key={sect.id} 
+                    className="flex items-center justify-between bg-slate-900 border border-slate-800/80 rounded-lg p-2.5 hover:border-slate-700 transition-all"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono text-slate-600">#{index + 1}</span>
+                      <span className={`text-xs font-semibold font-mono ${isVisible ? "text-slate-200" : "text-slate-500 line-through"}`}>
+                        {sect.name}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {/* Hide/Show Toggle */}
+                      <button
+                        onClick={() => toggleSectionVisibility(index)}
+                        className={`p-1.5 rounded transition-colors ${isVisible ? "text-slate-400 hover:text-white" : "text-red-400 hover:text-red-300 bg-red-950/20"}`}
+                        title={isVisible ? "Hide Section" : "Show Section"}
+                      >
+                        {isVisible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                      </button>
+
+                      {/* Move Up */}
+                      <button
+                        onClick={() => moveSection(index, "up")}
+                        disabled={index === 0}
+                        className="p-1.5 rounded text-slate-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                        title="Move Up"
+                      >
+                        <ArrowUp className="h-3.5 w-3.5" />
+                      </button>
+
+                      {/* Move Down */}
+                      <button
+                        onClick={() => moveSection(index, "down")}
+                        disabled={index === sectionsList.length - 1}
+                        className="p-1.5 rounded text-slate-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                        title="Move Down"
+                      >
+                        <ArrowDown className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            
+            {/* Quick Tips */}
+            <div className="p-4 border-t border-slate-900 bg-slate-950/50 text-[10px] text-slate-500 leading-relaxed font-mono shrink-0">
+              ⚡ Hint: Click any section title or text block in the live preview iframe to customize its individual typography, background, gradients, borders, and margins directly.
+            </div>
           </div>
         )}
       </aside>

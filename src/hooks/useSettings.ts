@@ -55,6 +55,9 @@ export type SiteSettings = {
     description: string;
     keywords: string;
   };
+  layout?: {
+    sections: { id: string; name: string; visible: boolean }[];
+  };
   custom_elements?: Record<string, any>;
 };
 
@@ -102,6 +105,29 @@ export const DEFAULT_SETTINGS: SiteSettings = {
       "Production-grade software engineering, AI, cloud, and design programs with mentor-led cohorts and placement support.",
     keywords: "tech training, full stack, AI, cloud, coimbatore, bootcamp",
   },
+  layout: {
+    sections: [
+      { id: "hero", name: "Hero", visible: true },
+      { id: "about", name: "About Us", visible: true },
+      { id: "trust", name: "Trust Strip", visible: true },
+      { id: "courses", name: "Course Catalog", visible: true },
+      { id: "why", name: "Why Carpediem", visible: true },
+      { id: "strategy", name: "Our Strategy", visible: true },
+      { id: "collaborations", name: "Collaborations", visible: true },
+      { id: "programs", name: "Programs", visible: true },
+      { id: "how", name: "How It Works", visible: true },
+      { id: "projects", name: "Live Projects", visible: true },
+      { id: "certifications", name: "Certifications", visible: true },
+      { id: "mentors", name: "Mentors", visible: true },
+      { id: "outcomes", name: "Outcomes", visible: true },
+      { id: "testimonials", name: "Testimonials", visible: true },
+      { id: "partners", name: "Partners", visible: true },
+      { id: "faqs", name: "FAQs", visible: true },
+      { id: "blog", name: "Blog", visible: true },
+      { id: "resources", name: "Resources", visible: true },
+      { id: "contact", name: "Contact", visible: true }
+    ]
+  }
 };
 
 export const SETTINGS_KEYS = Object.keys(DEFAULT_SETTINGS) as (keyof SiteSettings)[];

@@ -49,7 +49,36 @@ type ViewState = "portal" | "admin" | "success" | "courses" | "course-detail";
 
 const queryClient = new QueryClient();
 
+const SECTION_COMPONENTS: Record<string, (props: any) => React.JSX.Element> = {
+  hero: () => <Hero />,
+  about: () => <AboutUsSection />,
+  trust: () => <TrustStrip />,
+  courses: (props) => (
+    <CourseGrid
+      onEnroll={props.onEnroll}
+      onViewAll={props.onViewAll}
+      onViewDetails={props.onViewDetails}
+    />
+  ),
+  why: () => <WhyCarpediem />,
+  strategy: () => <StrategySection />,
+  collaborations: () => <CollaborationsSection />,
+  programs: () => <Programs />,
+  how: () => <HowItWorks />,
+  projects: () => <LiveProjects />,
+  certifications: () => <Certifications />,
+  mentors: () => <Mentors />,
+  outcomes: () => <Outcomes />,
+  testimonials: () => <TestimonialsSection />,
+  partners: () => <PartnerLogos />,
+  faqs: () => <FAQs />,
+  blog: () => <BlogPreview />,
+  resources: () => <Resources />,
+  contact: () => <Contact />
+};
+
 export default function App() {
+  const { settings } = useSettings();
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<ViewState>("portal");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -113,8 +142,8 @@ export default function App() {
   };
 
   const handleViewCourseDetail = (slug: string) => {
-    setCurrentCourseSlug(slug);
     setView("course-detail");
+    setCurrentCourseSlug(slug);
     window.scrollTo({ top: 0, behavior: "instant" });
   };
 
@@ -161,29 +190,20 @@ export default function App() {
                 />
               ) : (
                 <>
-                  <Hero />
-                  <AboutUsSection />
-                  <TrustStrip />
-                  <CourseGrid
-                    onEnroll={handleEnrollClick}
-                    onViewAll={handleViewCourses}
-                    onViewDetails={handleViewCourseDetail}
-                  />
-                  <WhyCarpediem />
-                  <StrategySection />
-                  <CollaborationsSection />
-                  <Programs />
-                  <HowItWorks />
-                  <LiveProjects />
-                  <Certifications />
-                  <Mentors />
-                  <Outcomes />
-                  <TestimonialsSection />
-                  <PartnerLogos />
-                  <FAQs />
-                  <BlogPreview />
-                  <Resources />
-                  <Contact />
+                  {(settings.layout?.sections || []).map((sect: any) => {
+                    if (sect.visible === false) return null;
+                    const Comp = SECTION_COMPONENTS[sect.id];
+                    if (!Comp) return null;
+                    return (
+                      <span key={sect.id}>
+                        {Comp({
+                          onEnroll: handleEnrollClick,
+                          onViewAll: handleViewCourses,
+                          onViewDetails: handleViewCourseDetail
+                        })}
+                      </span>
+                    );
+                  })}
                 </>
               )}
             </main>
