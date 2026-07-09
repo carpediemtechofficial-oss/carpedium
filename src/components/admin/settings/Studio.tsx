@@ -128,8 +128,8 @@ export default function Studio() {
     <div className="flex h-[calc(100vh-140px)] border border-slate-200 rounded-xl overflow-hidden bg-slate-900 text-slate-100">
       
       {/* Sidebar Controls */}
-      <aside className="w-80 border-r border-slate-800 bg-slate-950 p-6 flex flex-col justify-between flex-shrink-0">
-        <div className="space-y-6">
+      <aside className="w-80 border-r border-slate-800 bg-slate-950 p-6 flex flex-col justify-between flex-shrink-0 h-full overflow-hidden">
+        <div className="flex-1 overflow-y-auto space-y-6 pr-2 mb-4 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
           <div>
             <span className="text-[10px] font-mono text-teal-500 font-bold uppercase">GLOBAL LOOK & FEEL</span>
             <h3 className="font-bold text-sm text-slate-100 mt-1">Theme Studio</h3>
@@ -244,7 +244,7 @@ export default function Studio() {
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className="w-full mt-6 flex items-center justify-center gap-2 rounded-lg bg-teal-600 hover:bg-teal-500 text-white px-4 py-2.5 text-xs font-bold uppercase transition-colors disabled:opacity-50 cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 rounded-lg bg-teal-600 hover:bg-teal-500 text-white px-4 py-2.5 text-xs font-bold uppercase transition-colors disabled:opacity-50 cursor-pointer shrink-0"
         >
           <Save className="h-4 w-4" />
           {isSaving ? "Saving..." : "Save Theme"}
