@@ -4,22 +4,20 @@ import { playTick } from "@/lib/sound";
 import { useSettings } from "@/hooks/useSettings";
 import DeveloperCredit from "./DeveloperCredit";
 
-const COURSE_LINKS = [
-  { href: "#programs", label: "Full-Stack Development" },
-  { href: "#programs", label: "Generative AI" },
-  { href: "#courses", label: "All courses" },
+const TECHNICAL_SERVICES = [
+  { href: "#courses", label: "AIoT (AI + IoT Solutions)" },
+  { href: "#courses", label: "Web & Mobile App Dev" },
+  { href: "#courses", label: "Custom Software Dev" },
+  { href: "#courses", label: "Cloud Computing & DevOps" },
+  { href: "#courses", label: "UI/UX Prototyping" }
 ];
 
-const COMPANY_LINKS = [
-  { href: "#why", label: "Why Carpediem" },
-  { href: "#how-it-works", label: "How It Works" },
-  { href: "#mentors", label: "Mentors" },
-  { href: "#outcomes", label: "Outcomes" },
-];
-
-const RESOURCE_LINKS = [
-  { href: "#resources", label: "Tutorials" },
-  { href: "#resources", label: "Interview Prep" },
+const BUSINESS_SOLUTIONS = [
+  { href: "#courses", label: "Zoho & GST Integrations" },
+  { href: "#courses", label: "Financial Automation" },
+  { href: "#courses", label: "Edge Computing & Gen AI" },
+  { href: "#courses", label: "Digital Marketing" },
+  { href: "#courses", label: "SEO & SEM Optimization" }
 ];
 
 type FooterColumnProps = {
@@ -30,7 +28,7 @@ type FooterColumnProps = {
 function FooterColumn({ title, links }: FooterColumnProps) {
   return (
     <div>
-      <p className="font-mono text-xs uppercase tracking-wider text-teal font-bold">{title}</p>
+      <p className="font-mono text-xs uppercase tracking-wider text-teal-600 font-bold">{title}</p>
       <ul className="mt-4 space-y-2.5">
         {links.map((link) => (
           <li key={link.label}>
@@ -47,8 +45,6 @@ function FooterColumn({ title, links }: FooterColumnProps) {
   );
 }
 
-// ─── Inline social icons (kept local so they don't depend on the
-// lucide-react version installed in this project) ────────────────
 type IconProps = React.SVGProps<SVGSVGElement>;
 
 const IconLinkedin = (p: IconProps) => (
@@ -99,18 +95,37 @@ export default function Footer({ onAdminClick }: FooterProps) {
   return (
     <footer className="relative border-t border-slate-800 bg-slate-950 text-slate-300 px-6 pt-16 pb-8">
       {/* Background Subtle Green Radial Glow */}
-      <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-teal/5 blur-[100px] pointer-events-none z-0" />
+      <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-teal-500/5 blur-[100px] pointer-events-none z-0" />
 
       <div className="mx-auto max-w-6xl relative z-10">
         
         {/* Columns Grid */}
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
-          <FooterColumn title="Courses" links={COURSE_LINKS} />
-          <FooterColumn title="Company" links={COMPANY_LINKS} />
-          <FooterColumn title="Resources" links={RESOURCE_LINKS} />
+          <div className="col-span-2 sm:col-span-1 space-y-4">
+            <div className="flex items-center gap-3">
+              <img
+                src={branding.logo}
+                alt={branding.brandName}
+                width={34}
+                height={34}
+                className="rounded-full border border-slate-800 select-none bg-white"
+              />
+              <p className="font-display text-sm font-bold text-white tracking-wide">
+                {branding.brandName}
+              </p>
+            </div>
+            <p className="text-xs text-slate-400 leading-relaxed max-w-[200px]">
+              {footer.tagline || "Providing hands-on technology training, certification, and corporate digital solutions."}
+            </p>
+          </div>
+          
+          <FooterColumn title="Technical Services" links={TECHNICAL_SERVICES} />
+          <FooterColumn title="Business Solutions" links={BUSINESS_SOLUTIONS} />
+          
           <div>
-            <p className="font-mono text-xs uppercase tracking-wider text-teal font-bold">Contact</p>
+            <p className="font-mono text-xs uppercase tracking-wider text-teal-600 font-bold">Contact Us</p>
             <ul className="mt-4 space-y-2.5 text-sm">
+              <li className="text-slate-400">{contact.address}</li>
               {contact.email && (
                 <li>
                   <a href={`mailto:${contact.email}`} className="text-slate-400 hover:text-white transition-colors">
@@ -125,38 +140,28 @@ export default function Footer({ onAdminClick }: FooterProps) {
                   </a>
                 </li>
               )}
-              {contact.email && social.linkedin && (
-                <li>
-                  <a
-                    href={social.linkedin}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-slate-400 hover:text-white transition-colors"
-                  >
-                    LinkedIn
-                  </a>
-                </li>
-              )}
             </ul>
           </div>
         </div>
 
         {/* Bottom Banner */}
         <div className="mt-10 flex flex-col gap-6 border-t border-slate-800 pt-8 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <img
-              src={branding.logo}
-              alt={branding.brandName}
-              width={34}
-              height={34}
-              className="rounded-full border border-slate-800 select-none"
-            />
-            <div>
-              <p className="font-display text-sm font-bold text-white tracking-wide">
-                {branding.brandName}
-              </p>
-              <p className="text-[10px] text-slate-500 font-mono">{contact.address}</p>
-            </div>
+          <div className="flex items-center gap-6 text-xs text-slate-500 font-mono">
+            {onAdminClick && (
+              <button
+                type="button"
+                onClick={() => {
+                  playTick();
+                  onAdminClick();
+                }}
+                className="hover:text-teal-500 font-bold uppercase tracking-wider transition-colors cursor-pointer"
+              >
+                Admin Portal
+              </button>
+            )}
+            <span>
+              © {new Date().getFullYear()} {footer.copyright}
+            </span>
           </div>
 
           {/* Social Icons */}
@@ -172,7 +177,7 @@ export default function Footer({ onAdminClick }: FooterProps) {
                   rel="noopener noreferrer"
                   aria-label={label}
                   onMouseEnter={playTick}
-                  className={`${base} border-slate-700 text-slate-300 hover:text-white hover:border-teal hover:bg-teal/10 hover:-translate-y-0.5`}
+                  className={`${base} border-slate-700 text-slate-300 hover:text-white hover:border-teal-500 hover:bg-teal-500/10 hover:-translate-y-0.5`}
                 >
                   <Icon className="h-4 w-4" />
                 </a>
@@ -188,28 +193,9 @@ export default function Footer({ onAdminClick }: FooterProps) {
               );
             })}
           </div>
-
-          <div className="flex items-center gap-6 text-xs text-slate-500 font-mono">
-            {onAdminClick && (
-              <button
-                type="button"
-                onClick={() => {
-                  playTick();
-                  onAdminClick();
-                }}
-                className="hover:text-teal font-bold uppercase tracking-wider transition-colors cursor-pointer"
-              >
-                Admin Portal
-              </button>
-            )}
-            <span>
-              © {new Date().getFullYear()} {footer.copyright}
-            </span>
-          </div>
-
         </div>
 
-        {/* Developer Credit (obfuscated + self-healing + tamper alert) */}
+        {/* Developer Credit */}
         <DeveloperCredit />
 
       </div>

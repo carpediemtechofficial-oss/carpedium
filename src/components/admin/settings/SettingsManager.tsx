@@ -7,6 +7,8 @@ import {
   SETTINGS_KEYS,
   type SiteSettings,
 } from "@/hooks/useSettings";
+import Studio from "./Studio";
+import Canvas from "./Canvas";
 
 type SettingsRow = { key: string; value: Record<string, string> };
 
@@ -96,6 +98,7 @@ const SECTIONS: {
 ];
 
 export default function SettingsManager() {
+  const [viewMode, setViewMode] = useState<"general" | "studio" | "canvas">("general");
   const [draft, setDraft] = useState<SiteSettings>(structuredClone(DEFAULT_SETTINGS));
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -156,32 +159,59 @@ export default function SettingsManager() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-xl font-bold font-display text-slate-900">Website Settings</h2>
-          <p className="text-sm text-slate-500 mt-1">
-            Changes apply live across the site the moment you save.
-          </p>
-        </div>
+      {/* Navigation tabs */}
+      <div className="flex border-b border-slate-200 gap-4 text-sm font-semibold mb-6">
         <button
-          onClick={handleSave}
-          disabled={saving}
-          className="bg-teal-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors flex items-center gap-2 disabled:opacity-70"
+          onClick={() => setViewMode("general")}
+          className={`pb-3 transition-colors ${viewMode === "general" ? "border-b-2 border-teal-600 text-teal-600 font-bold" : "text-slate-500 hover:text-slate-800"}`}
         >
-          {saving ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : saved ? (
-            <CheckCircle2 className="h-4 w-4" />
-          ) : (
-            <Save className="h-4 w-4" />
-          )}
-          {saved ? "Saved" : "Save Changes"}
+          General Settings
+        </button>
+        <button
+          onClick={() => setViewMode("studio")}
+          className={`pb-3 transition-colors ${viewMode === "studio" ? "border-b-2 border-teal-600 text-teal-600 font-bold" : "text-slate-500 hover:text-slate-800"}`}
+        >
+          Theme Studio
+        </button>
+        <button
+          onClick={() => setViewMode("canvas")}
+          className={`pb-3 transition-colors ${viewMode === "canvas" ? "border-b-2 border-teal-600 text-teal-600 font-bold" : "text-slate-500 hover:text-slate-800"}`}
+        >
+          Visual Canvas Editor
         </button>
       </div>
 
-      {error && (
-        <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm border border-red-100">{error}</div>
-      )}
+      {viewMode === "studio" && <Studio />}
+      {viewMode === "canvas" && <Canvas />}
+
+      {viewMode === "general" && (
+        <>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h2 className="text-xl font-bold font-display text-slate-900">Website Settings</h2>
+              <p className="text-sm text-slate-500 mt-1">
+                Changes apply live across the site the moment you save.
+              </p>
+            </div>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="bg-teal-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors flex items-center gap-2 disabled:opacity-70"
+            >
+              {saving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : saved ? (
+                <CheckCircle2 className="h-4 w-4" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              {saved ? "Saved" : "Save Changes"}
+            </button>
+          </div>
+
+          {error && (
+            <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm border border-red-100">{error}</div>
+          )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {SECTIONS.map((section) => (
@@ -238,6 +268,8 @@ export default function SettingsManager() {
           </div>
         ))}
       </div>
+      </>
+      )}
     </div>
   );
 }

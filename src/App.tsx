@@ -32,6 +32,15 @@ import SettingsEffects from "@/components/providers/SettingsEffects";
 import CoursesPage from "@/components/courses/CoursesPage";
 import CourseDetailContainer from "@/components/courses/CourseDetailContainer";
 
+import AboutUsSection from "@/components/sections/AboutUsSection";
+import StrategySection from "@/components/sections/StrategySection";
+import CollaborationsSection from "@/components/sections/CollaborationsSection";
+import TestimonialsSection from "@/components/sections/TestimonialsSection";
+import PartnerLogos from "@/components/sections/PartnerLogos";
+
+import StyleOverrides from "@/editor/StyleOverrides";
+import CanvasRuntime from "@/editor/CanvasRuntime";
+
 import { type Course } from "@/data/courses";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://script.google.com/macros/s/AKfycbzf4_Vj066n-X_5ZJ7B2D2V_M73r6yBNDq4-vQ/exec";
@@ -117,6 +126,8 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <SettingsEffects />
+      <StyleOverrides />
+      <CanvasRuntime />
       <div className="min-h-full flex flex-col bg-white text-slate-900">
         <PreLoader onComplete={() => setLoading(false)} />
 
@@ -151,6 +162,7 @@ export default function App() {
               ) : (
                 <>
                   <Hero />
+                  <AboutUsSection />
                   <TrustStrip />
                   <CourseGrid
                     onEnroll={handleEnrollClick}
@@ -158,12 +170,16 @@ export default function App() {
                     onViewDetails={handleViewCourseDetail}
                   />
                   <WhyCarpediem />
+                  <StrategySection />
+                  <CollaborationsSection />
                   <Programs />
                   <HowItWorks />
                   <LiveProjects />
                   <Certifications />
                   <Mentors />
                   <Outcomes />
+                  <TestimonialsSection />
+                  <PartnerLogos />
                   <FAQs />
                   <BlogPreview />
                   <Resources />

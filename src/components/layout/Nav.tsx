@@ -9,11 +9,10 @@ import { useSettings } from "@/hooks/useSettings";
 
 const LINKS = [
   { href: "#courses", label: "Courses" },
-  { href: "#why", label: "Why Us" },
-  { href: "#programs", label: "Programs" },
-  { href: "#how-it-works", label: "Timeline" },
-  { href: "#mentors", label: "Mentors" },
-  { href: "#outcomes", label: "Careers" },
+  { href: "#about", label: "About" },
+  { href: "#strategy", label: "Strategy" },
+  { href: "#collaborations", label: "Collaborations" },
+  { href: "#testimonials", label: "Testimonials" },
   { href: "#contact", label: "Contact" },
 ];
 

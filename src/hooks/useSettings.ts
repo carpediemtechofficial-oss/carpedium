@@ -19,6 +19,8 @@ export type SiteSettings = {
     primaryColor: string;
     primaryLight: string;
     primaryStrong: string;
+    headingFont?: string;
+    bodyFont?: string;
   };
   contact: {
     email: string;
@@ -53,6 +55,7 @@ export type SiteSettings = {
     description: string;
     keywords: string;
   };
+  custom_elements?: Record<string, any>;
 };
 
 export const DEFAULT_SETTINGS: SiteSettings = {
@@ -114,13 +117,68 @@ function mergeSettings(rows: SettingsRow[] | undefined): SiteSettings {
         merged[row.key as keyof SiteSettings] as Record<string, unknown>,
         row.value
       );
+    } else if (row.key === "site_settings" && row.value && typeof row.value === "object") {
+      merged.custom_elements = (row.value as any).custom_elements || {};
+    } else if (row.key === "custom_elements" && row.value && typeof row.value === "object") {
+      merged.custom_elements = row.value;
     }
   }
   return merged;
 }
 
+// Helper to merge live drafts into settings
+function mergeDrafts(settings: SiteSettings, drafts: any): SiteSettings {
+  if (!drafts) return settings;
+  const merged = structuredClone(settings);
+  for (const [sectionKey, fields] of Object.entries(drafts)) {
+    if (fields && typeof fields === "object") {
+      if (sectionKey === "site_settings" || sectionKey === "custom_elements") {
+        merged.custom_elements = {
+          ...(merged.custom_elements || {}),
+          ...((fields as any).custom_elements || fields)
+        };
+      } else {
+        if (!merged[sectionKey as keyof SiteSettings]) {
+          (merged as any)[sectionKey] = {};
+        }
+        Object.assign(
+          merged[sectionKey as keyof SiteSettings] as Record<string, unknown>,
+          fields
+        );
+      }
+    }
+  }
+  return merged;
+}
+
+// Global listener registry for real-time postMessage preview sync
+let globalPreviewContent: any = null;
+const previewListeners = new Set<() => void>();
+
+if (typeof window !== "undefined") {
+  window.addEventListener("message", (event) => {
+    if (event.data?.type === "PREVIEW_OVERRIDE") {
+      globalPreviewContent = event.data.content;
+      previewListeners.forEach((listener) => listener());
+    }
+  });
+}
+
+import { useState } from "react";
+
 export function useSettings() {
   const queryClient = useQueryClient();
+  const [livePreviewContent, setLivePreviewContent] = useState(globalPreviewContent);
+
+  useEffect(() => {
+    const handler = () => {
+      setLivePreviewContent(globalPreviewContent);
+    };
+    previewListeners.add(handler);
+    return () => {
+      previewListeners.delete(handler);
+    };
+  }, []);
 
   useEffect(() => {
     const channel = supabase
@@ -145,5 +203,11 @@ export function useSettings() {
     },
   });
 
-  return { settings: query.data ?? DEFAULT_SETTINGS, isLoading: query.isLoading };
+  const baseSettings = query.data ?? DEFAULT_SETTINGS;
+  const mergedSettings = livePreviewContent
+    ? mergeDrafts(baseSettings, livePreviewContent)
+    : baseSettings;
+
+  return { settings: mergedSettings, isLoading: query.isLoading };
 }
+
